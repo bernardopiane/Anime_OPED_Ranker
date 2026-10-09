@@ -81,19 +81,24 @@ async function init() {
 }
 
 const resolved = new Map();
-const resolving = new Set();
+const resolving = new Map();
 
-async function ensureResolved(item) {
-  if (resolved.has(item.id) || resolving.has(item.id)) return;
-  resolving.add(item.id);
-  try {
-    const data = await fetchVideoForItem(item);
-    resolved.set(item.id, data);
-  } catch {
-    resolved.set(item.id, { videoUrl: null, pageUrl: item.url });
-  } finally {
-    resolving.delete(item.id);
-  }
+function ensureResolved(item) {
+  if (resolved.has(item.id)) return Promise.resolve();
+  const inFlight = resolving.get(item.id);
+  if (inFlight) return inFlight;
+  const pending = fetchVideoForItem(item)
+    .then((data) => {
+      resolved.set(item.id, data);
+    })
+    .catch(() => {
+      resolved.set(item.id, { videoUrl: null, pageUrl: item.url });
+    })
+    .finally(() => {
+      resolving.delete(item.id);
+    });
+  resolving.set(item.id, pending);
+  return pending;
 }
 
 function itemById(id) {
@@ -157,7 +162,7 @@ function renderPanel(side, item) {
   if (!info) {
     const id = item.id;
     ensureResolved(item).then(() => {
-      if (panel.dataset.id === String(id)) renderPanel(side, item);
+      if (resolved.has(id) && panel.dataset.id === String(id)) renderPanel(side, item);
     });
   }
 }
@@ -210,8 +215,8 @@ document.addEventListener('keydown', (e) => {
   if (el('match-screen').classList.contains('hidden')) return;
   if (e.repeat) return;
   if (e.ctrlKey || e.altKey || e.metaKey) return;
-  if (e.key === 'ArrowLeft') pick('a');
-  else if (e.key === 'ArrowRight') pick('b');
+  if (e.key === 'ArrowLeft' && !e.shiftKey) pick('a');
+  else if (e.key === 'ArrowRight' && !e.shiftKey) pick('b');
   else if (e.key.toLowerCase() === 'u') {
     const panel = el('panel-a');
     panel.querySelector('.controls button:last-child')?.click();
