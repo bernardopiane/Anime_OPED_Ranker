@@ -1,4 +1,5 @@
 export function parseCsvUrl(url) {
+  if (typeof url !== 'string') return null;
   const m = url.match(/animethemes\.moe\/anime\/([^/]+)\/([^/?#]+)/i);
   if (!m) return null;
   const slug = m[1];
@@ -20,15 +21,15 @@ export function pickVideo(anime, theme, tags) {
   if (videos.length === 0) return null;
   if (tags) {
     const exact = videos.find((v) => v.tags === tags);
-    if (exact) return exact.link;
+    if (exact) return exact.link || null;
   }
-  return videos[0].link;
+  return videos[0].link || null;
 }
 
 export async function fetchVideoForItem(item) {
-  const parsed = parseCsvUrl(item.url);
-  if (!parsed) return { videoUrl: null, pageUrl: item.url };
   try {
+    const parsed = parseCsvUrl(item.url);
+    if (!parsed) return { videoUrl: null, pageUrl: item.url };
     const res = await fetch(
       `https://api.animethemes.moe/anime/${parsed.slug}?include=animethemes.animethemeentries.videos`,
     );
