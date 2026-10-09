@@ -58,6 +58,29 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .panel .controls button { padding: 0.25rem 0.6rem; }
 .panel .fallback { color: var(--muted); font-size: 0.85rem; }
 .panel .fallback a { color: var(--accent); }
+.panel .loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  aspect-ratio: 16 / 9;
+  background: var(--panel-hover);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.panel .loading::before {
+  content: '';
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--muted);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 .match-footer { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; }
 .hint { color: var(--muted); font-size: 0.85rem; }

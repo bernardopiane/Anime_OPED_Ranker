@@ -248,9 +248,12 @@ function renderPanel(side, item) {
       if (activeSide === side) activeSide = null;
       applyAudio();
     });
-  } else {
+  } else if (info) {
     panel.appendChild(fallback(item));
     panel.appendChild(controls);
+    media[side] = { video: null, button: null };
+  } else {
+    panel.appendChild(loadingBox());
     media[side] = { video: null, button: null };
   }
 
@@ -262,6 +265,13 @@ function renderPanel(side, item) {
       if (resolved.has(id) && panel.dataset.id === String(id)) renderPanel(side, item);
     });
   }
+}
+
+function loadingBox() {
+  const box = document.createElement('div');
+  box.className = 'loading';
+  box.textContent = 'Loading preview…';
+  return box;
 }
 
 function fallback(item) {
