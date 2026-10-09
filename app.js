@@ -19,7 +19,13 @@ function showScreen(name) {
 }
 
 function persist() {
-  save({ items: state.items, winners: state.tournament.winners, version: 1 });
+  const ok = save({
+    items: state.items,
+    winners: state.tournament.winners,
+    resolved: [...resolved.entries()],
+    version: 1,
+  });
+  if (!ok) el('warning').classList.remove('hidden');
 }
 
 async function loadItems() {
@@ -56,10 +62,25 @@ async function init() {
   }
 
   const saved = load();
+  if (saved && Array.isArray(saved.resolved)) {
+    for (const entry of saved.resolved) {
+      if (
+        Array.isArray(entry) &&
+        entry.length === 2 &&
+        typeof entry[0] === 'number' &&
+        entry[1] &&
+        typeof entry[1] === 'object'
+      ) {
+        resolved.set(entry[0], entry[1]);
+      }
+    }
+  }
   state.tournament = createTournament(idsOf(state.items));
   if (isResumable(saved)) {
     state.tournament.winners = saved.winners;
-    el('resume-btn').classList.remove('hidden');
+    const resumeBtn = el('resume-btn');
+    resumeBtn.textContent = `Resume — ${getProgress(state.tournament).percent}%`;
+    resumeBtn.classList.remove('hidden');
   }
 
   el('status').textContent = `${state.items.length} openings ready.`;
@@ -80,7 +101,9 @@ async function init() {
     if (!confirm('Clear all progress?')) return;
     clear();
     state.tournament = createTournament(idsOf(state.items));
-    el('resume-btn').classList.add('hidden');
+    const resetResume = el('resume-btn');
+    resetResume.textContent = 'Resume';
+    resetResume.classList.add('hidden');
     el('status').textContent = `${state.items.length} openings ready.`;
     showScreen('start');
   });
@@ -104,9 +127,11 @@ function ensureResolved(item) {
   const pending = fetchVideoForItem(item)
     .then((data) => {
       resolved.set(item.id, data);
+      persist();
     })
     .catch(() => {
       resolved.set(item.id, { videoUrl: null, pageUrl: item.url });
+      persist();
     })
     .finally(() => {
       resolving.delete(item.id);
@@ -144,9 +169,32 @@ function renderPanel(side, item) {
     video.preload = 'metadata';
     video.addEventListener('error', () => {
       video.replaceWith(fallback(item));
+      scrub.remove();
       controls.remove();
     });
     panel.appendChild(video);
+
+    const scrub = document.createElement('input');
+    scrub.type = 'range';
+    scrub.className = 'scrub';
+    scrub.min = '0';
+    scrub.max = '1000';
+    scrub.value = '0';
+    const syncScrub = () => {
+      if (Number.isFinite(video.duration) && video.duration > 0) {
+        scrub.value = String(Math.round((video.currentTime / video.duration) * 1000));
+      }
+    };
+    video.addEventListener('timeupdate', syncScrub);
+    video.addEventListener('loadedmetadata', syncScrub);
+    scrub.addEventListener('input', () => {
+      if (Number.isFinite(video.duration) && video.duration > 0) {
+        video.currentTime = (Number(scrub.value) / 1000) * video.duration;
+      }
+    });
+    scrub.addEventListener('click', (e) => e.stopPropagation());
+    scrub.addEventListener('pointerdown', (e) => e.stopPropagation());
+    panel.appendChild(scrub);
 
     const playBtn = document.createElement('button');
     playBtn.type = 'button';
@@ -228,6 +276,7 @@ el('panel-b').addEventListener('click', () => pick('b'));
 
 document.addEventListener('keydown', (e) => {
   if (el('match-screen').classList.contains('hidden')) return;
+  if (e.target instanceof HTMLInputElement) return;
   if (e.repeat) return;
   if (e.ctrlKey || e.altKey || e.metaKey) return;
   if (e.key === 'ArrowLeft' && !e.shiftKey) pick('a');
@@ -294,7 +343,9 @@ el('again-btn').addEventListener('click', () => {
   if (!confirm('Clear progress and start over?')) return;
   clear();
   state.tournament = createTournament(state.items.map((i) => i.id));
-  el('resume-btn').classList.add('hidden');
+  const againResume = el('resume-btn');
+  againResume.textContent = 'Resume';
+  againResume.classList.add('hidden');
   showScreen('start');
 });
 

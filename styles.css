@@ -52,6 +52,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
   background: var(--panel);
 }
 .panel video { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 6px; }
+.panel .scrub { width: 100%; accent-color: var(--accent); }
 .panel .title { font-weight: 600; }
 .panel .controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .panel .controls button { padding: 0.25rem 0.6rem; }
@@ -60,6 +61,15 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 
 .match-footer { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; }
 .hint { color: var(--muted); font-size: 0.85rem; }
+
+.warning {
+  background: #3a1d22;
+  border: 1px solid var(--accent);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0 1rem;
+}
 
 #results-list { line-height: 1.9; }
 #results-list a { color: var(--muted); text-decoration: none; }
