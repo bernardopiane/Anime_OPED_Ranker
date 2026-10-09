@@ -58,6 +58,8 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .panel .controls button { padding: 0.25rem 0.6rem; }
 .panel .fallback { color: var(--muted); font-size: 0.85rem; }
 .panel .fallback a { color: var(--accent); }
+.volume { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.85rem; }
+.volume input { width: 8rem; accent-color: var(--accent); }
 .panel .loading {
   display: flex;
   align-items: center;

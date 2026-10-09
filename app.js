@@ -31,6 +31,7 @@ function persist() {
     winners: state.tournament.winners,
     resolved: cacheEntries(resolved),
     version: RECORD_VERSION,
+    volume: masterVolume,
   });
   el('warning').classList.toggle('hidden', ok);
 }
@@ -67,6 +68,9 @@ async function init() {
   }
 
   const saved = load();
+  if (saved && typeof saved.volume === 'number' && saved.volume >= 0 && saved.volume <= 1) {
+    masterVolume = saved.volume;
+  }
   if (isMatchingSource(saved, state.items) && saved.version === RECORD_VERSION) {
     for (const [id, info] of hydrateEntries(saved.resolved)) resolved.set(id, info);
   }
@@ -111,6 +115,14 @@ async function init() {
     renderMatch();
   });
 
+  const volumeInput = el('volume');
+  volumeInput.value = String(masterVolume);
+  volumeInput.addEventListener('input', () => {
+    masterVolume = Number(volumeInput.value);
+    applyAudio();
+    persist();
+  });
+
   showScreen('start');
 }
 
@@ -123,12 +135,16 @@ const media = {
 };
 let activeSide = null;
 let lockedSide = null;
+let masterVolume = 1;
 
 function applyAudio() {
   for (const side of ['a', 'b']) {
     const { video, button } = media[side];
     const muted = side !== activeSide;
-    if (video) video.muted = muted;
+    if (video) {
+      video.muted = muted;
+      video.volume = masterVolume;
+    }
     if (button) button.textContent = muted ? 'Unmute' : 'Mute';
   }
 }
