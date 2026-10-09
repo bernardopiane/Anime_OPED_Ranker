@@ -2,6 +2,13 @@ import { parseCsv } from './src/csv.js';
 import { createTournament, nextMatchup, recordWinner, getProgress, isComplete, getRanking } from './src/tournament.js';
 import { fetchVideoForItem } from './src/resolve.js';
 import { save, load, clear } from './src/storage.js';
+import {
+  RECORD_VERSION,
+  sourceFingerprint,
+  isMatchingSource,
+  cacheEntries,
+  hydrateEntries,
+} from './src/cache.js';
 
 const CSV_URL = 'krisgo%20opening%20list.csv';
 
@@ -20,10 +27,10 @@ function showScreen(name) {
 
 function persist() {
   const ok = save({
-    items: state.items,
+    fingerprint: sourceFingerprint(state.items),
     winners: state.tournament.winners,
-    resolved: [...resolved.entries()],
-    version: 1,
+    resolved: cacheEntries(resolved),
+    version: RECORD_VERSION,
   });
   el('warning').classList.toggle('hidden', ok);
 }
@@ -39,11 +46,9 @@ function idsOf(items) {
 }
 
 function isResumable(saved) {
-  if (!saved || !Array.isArray(saved.items) || !Array.isArray(saved.winners)) return false;
-  if (saved.winners.length === 0) return false;
+  if (!isMatchingSource(saved, state.items) || saved.version !== RECORD_VERSION) return false;
+  if (!Array.isArray(saved.winners) || saved.winners.length === 0) return false;
   const ids = idsOf(state.items);
-  if (saved.items.length !== ids.length) return false;
-  if (saved.items.some((item, i) => !item || item.id !== ids[i])) return false;
   if (saved.winners.some((winner) => !ids.includes(winner))) return false;
   try {
     getProgress({ ids, winners: saved.winners });
@@ -62,18 +67,8 @@ async function init() {
   }
 
   const saved = load();
-  if (saved && Array.isArray(saved.resolved)) {
-    for (const entry of saved.resolved) {
-      if (
-        Array.isArray(entry) &&
-        entry.length === 2 &&
-        typeof entry[0] === 'number' &&
-        entry[1] &&
-        typeof entry[1] === 'object'
-      ) {
-        resolved.set(entry[0], entry[1]);
-      }
-    }
+  if (isMatchingSource(saved, state.items) && saved.version === RECORD_VERSION) {
+    for (const [id, info] of hydrateEntries(saved.resolved)) resolved.set(id, info);
   }
   state.tournament = createTournament(idsOf(state.items));
   if (isResumable(saved)) {

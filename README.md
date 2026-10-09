@@ -1,7 +1,8 @@
 # Krisgo Opening List
 
-Ranks the 100 anime openings/endings in `krisgo opening list.csv` into a Top 100
-through a merge-sort tournament of pairwise picks, with embedded video previews.
+Ranks the anime openings/endings in `krisgo opening list.csv` into a definitive
+ordering through a merge-sort tournament of pairwise picks, with embedded video
+previews. The list is read dynamically, so it works with any number of entries.
 
 ## Run
 
