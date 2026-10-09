@@ -74,6 +74,8 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .volume input { width: 8rem; accent-color: var(--accent); }
 .shuffle-toggle { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.75rem 0; color: var(--muted); font-size: 0.85rem; }
 .shuffle-toggle input { accent-color: var(--accent); }
+.load-csv { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.75rem 0; color: var(--muted); font-size: 0.85rem; }
+.load-csv span { cursor: pointer; }
 .panel .loading {
   display: flex;
   align-items: center;

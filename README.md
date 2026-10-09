@@ -27,6 +27,14 @@ Animethemes previews use a native video player; YouTube previews use the YouTube
 IFrame Player API. Both respond to hover-to-unmute, the master volume slider, and
 the Play/Pause control.
 
+## Your own CSV
+
+On the start screen, **Load your own CSV** lets you pick a local file that follows
+the same template — one `title,link` per line, nothing else. Reordering or editing
+rows is fine; invalid lines are skipped. The loaded list is saved in `localStorage`
+so progress and Resume keep working after a reload. **Reset** clears your file and
+returns to the bundled list.
+
 ## Pause and resume
 
 Progress is saved to browser `localStorage` after every pick, so it survives

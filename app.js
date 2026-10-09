@@ -17,6 +17,8 @@ const CSV_URL = 'krisgo%20opening%20list.csv';
 const state = {
   items: [],
   tournament: null,
+  customSource: false,
+  sourceName: '',
 };
 
 const el = (id) => document.getElementById(id);
@@ -28,7 +30,7 @@ function showScreen(name) {
 }
 
 function persist() {
-  const ok = save({
+  const record = {
     fingerprint: sourceFingerprint(state.items),
     ids: state.tournament.ids,
     winners: state.tournament.winners,
@@ -36,7 +38,13 @@ function persist() {
     videos: videoCacheEntries(resolved, state.items),
     version: RECORD_VERSION,
     volume: masterVolume,
-  });
+    custom: state.customSource,
+  };
+  if (state.customSource) {
+    record.items = state.items;
+    record.sourceName = state.sourceName;
+  }
+  const ok = save(record);
   el('warning').classList.toggle('hidden', ok);
 }
 
@@ -44,6 +52,20 @@ async function loadItems() {
   const res = await fetch(CSV_URL, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`Could not load CSV (HTTP ${res.status})`);
   return parseCsv(await res.text());
+}
+
+function isValidItems(items) {
+  return (
+    Array.isArray(items) &&
+    items.length > 0 &&
+    items.every(
+      (item) =>
+        item &&
+        typeof item.id === 'number' &&
+        typeof item.title === 'string' &&
+        typeof item.url === 'string',
+    )
+  );
 }
 
 function idsOf(items) {
@@ -82,18 +104,47 @@ function updateResumeButton(savedRecord = load()) {
   }
 }
 
-async function init() {
-  try {
-    state.items = await loadItems();
-  } catch (err) {
-    el('status').textContent = `Error: ${err.message}. Serve the site over HTTP.`;
-    return;
-  }
+function updateSourceLabel() {
+  const n = state.items.length;
+  el('status').textContent = state.customSource
+    ? `${n} openings loaded from ${state.sourceName}.`
+    : `${n} openings ready.`;
+}
 
+function useItems(items, sourceName) {
+  state.items = items;
+  state.customSource = true;
+  state.sourceName = sourceName;
+  resolved.clear();
+  resolving.clear();
+  cleanupMedia('a');
+  cleanupMedia('b');
+  state.tournament = createTournament(idsOf(items));
+  persist();
+  updateResumeButton(null);
+  updateSourceLabel();
+  showScreen('start');
+}
+
+async function init() {
   const saved = load();
   if (saved && typeof saved.volume === 'number' && saved.volume >= 0 && saved.volume <= 1) {
     masterVolume = saved.volume;
   }
+
+  if (saved && saved.custom === true && isValidItems(saved.items)) {
+    state.items = saved.items;
+    state.customSource = true;
+    state.sourceName = typeof saved.sourceName === 'string' ? saved.sourceName : 'your file';
+  } else {
+    try {
+      state.items = await loadItems();
+    } catch (err) {
+      el('status').textContent = `Error: ${err.message}. Serve the site over HTTP.`;
+      return;
+    }
+  }
+
   if (isMatchingSource(saved, state.items) && saved.version === RECORD_VERSION) {
     for (const [id, info] of hydrateEntries(saved.resolved)) resolved.set(id, info);
   }
@@ -105,8 +156,7 @@ async function init() {
     state.tournament = { ids: [...saved.ids], winners: [...saved.winners] };
   }
   updateResumeButton(saved);
-
-  el('status').textContent = `${state.items.length} openings ready.`;
+  updateSourceLabel();
 
   el('start-btn').addEventListener('click', () => {
     if (isResumable(load()) && !confirm('Start a new ranking? Your saved progress will be replaced.')) {
@@ -125,15 +175,42 @@ async function init() {
     renderMatch();
   });
 
-  el('reset-btn').addEventListener('click', () => {
-    if (!confirm('Clear all progress?')) return;
+  el('reset-btn').addEventListener('click', async () => {
+    if (!confirm('Clear all progress and load the default list?')) return;
     clear();
     resolved.clear();
     resolving.clear();
+    state.customSource = false;
+    state.sourceName = '';
+    try {
+      state.items = await loadItems();
+    } catch (err) {
+      el('status').textContent = `Error: ${err.message}. Serve the site over HTTP.`;
+      return;
+    }
     state.tournament = createTournament(idsOf(state.items));
-    updateResumeButton();
-    el('status').textContent = `${state.items.length} openings ready.`;
+    updateResumeButton(null);
+    updateSourceLabel();
     showScreen('start');
+  });
+
+  el('file-input').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    let text;
+    try {
+      text = await file.text();
+    } catch {
+      el('status').textContent = 'Could not read that file.';
+      return;
+    }
+    const items = parseCsv(text);
+    if (!isValidItems(items)) {
+      el('status').textContent = 'No valid "title,link" rows found in that file.';
+      return;
+    }
+    useItems(items, file.name);
   });
 
   el('undo-btn').addEventListener('click', () => {
@@ -614,11 +691,9 @@ el('download-btn').addEventListener('click', () => {
 
 el('again-btn').addEventListener('click', () => {
   if (!confirm('Clear progress and start over?')) return;
-  clear();
-  resolved.clear();
-  resolving.clear();
   state.tournament = createTournament(state.items.map((i) => i.id));
-  updateResumeButton();
+  persist();
+  updateResumeButton(null);
   showScreen('start');
 });
 
