@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Krisgo Opening List — Top 100</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <section id="start-screen" class="screen">
+        <h1>Krisgo Opening List</h1>
+        <p id="status">Loading…</p>
+        <div class="actions">
+          <button id="start-btn" class="primary">Start</button>
+          <button id="resume-btn" class="primary hidden">Resume</button>
+          <button id="reset-btn">Reset</button>
+        </div>
+      </section>
+
+      <section id="match-screen" class="screen hidden">
+        <header class="progress">
+          <div class="bar"><div id="progress-bar"></div></div>
+          <span id="progress-label"></span>
+        </header>
+        <div id="panels">
+          <div id="panel-a" class="panel" role="button" tabindex="0"></div>
+          <div id="panel-b" class="panel" role="button" tabindex="0"></div>
+        </div>
+        <footer class="match-footer">
+          <button id="undo-btn">Undo</button>
+          <span class="hint">Click a panel or press ← / → to pick · U to unmute</span>
+        </footer>
+      </section>
+
+      <section id="results-screen" class="screen hidden">
+        <h1>Your Top 100</h1>
+        <ol id="results-list"></ol>
+        <div class="actions">
+          <button id="copy-btn">Copy</button>
+          <button id="download-btn">Download CSV</button>
+          <button id="again-btn">Play again</button>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

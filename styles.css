@@ -1,0 +1,70 @@
+:root {
+  --bg: #101014;
+  --panel: #1b1b22;
+  --panel-hover: #26262f;
+  --text: #f2f2f5;
+  --muted: #9a9aa8;
+  --accent: #ff5a7a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+#app { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+
+.hidden { display: none !important; }
+
+h1 { font-size: 1.6rem; }
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid #33333d;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+button:hover { background: var(--panel-hover); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+
+.progress { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.progress .bar { flex: 1; height: 10px; background: var(--panel); border-radius: 999px; overflow: hidden; }
+.progress .bar > div { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+#progress-label { color: var(--muted); white-space: nowrap; font-size: 0.9rem; }
+
+#panels { display: flex; gap: 1rem; }
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  text-align: left;
+  background: var(--panel);
+}
+.panel video { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 6px; }
+.panel .title { font-weight: 600; }
+.panel .controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.panel .controls button { padding: 0.25rem 0.6rem; }
+.panel .fallback { color: var(--muted); font-size: 0.85rem; }
+.panel .fallback a { color: var(--accent); }
+
+.match-footer { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; }
+.hint { color: var(--muted); font-size: 0.85rem; }
+
+#results-list { line-height: 1.9; }
+#results-list a { color: var(--muted); text-decoration: none; }
+#results-list a:hover { color: var(--accent); }
+
+@media (max-width: 720px) {
+  #panels { flex-direction: column; }
+}
