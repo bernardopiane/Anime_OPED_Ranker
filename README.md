@@ -35,6 +35,12 @@ rows is fine; invalid lines are skipped. The loaded list is saved in `localStora
 so progress and Resume keep working after a reload. **Reset** clears your file and
 returns to the bundled list.
 
+## Preview ranking
+
+While playing, **Preview ranking** opens a provisional ordering that reflects the
+picks you've made so far. It updates as you keep going and matches the final
+ranking once the tournament is complete.
+
 ## Pause and resume
 
 Progress is saved to browser `localStorage` after every pick, so it survives

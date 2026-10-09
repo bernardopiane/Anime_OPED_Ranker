@@ -1,5 +1,5 @@
 import { parseCsv } from './src/csv.js';
-import { createTournament, nextMatchup, recordWinner, getProgress, isComplete, getRanking, shuffleIds } from './src/tournament.js';
+import { createTournament, nextMatchup, recordWinner, getProgress, isComplete, getRanking, getCurrentRanking, shuffleIds } from './src/tournament.js';
 import { fetchVideoForItem } from './src/resolve.js';
 import { save, load, clear } from './src/storage.js';
 import {
@@ -621,6 +621,10 @@ el('panel-b').addEventListener('mouseenter', () => setActive('b'));
 el('panel-b').addEventListener('mouseleave', () => setActive(lockedSide));
 
 document.addEventListener('keydown', (e) => {
+  if (!el('preview-modal').classList.contains('hidden')) {
+    if (e.key === 'Escape') closePreview();
+    return;
+  }
   if (el('match-screen').classList.contains('hidden')) return;
   if (e.target instanceof HTMLInputElement) return;
   if (e.repeat) return;
@@ -646,6 +650,33 @@ function toCsv(items) {
 function toText(items) {
   return items.map((item, i) => `${i + 1}. ${item.title}`).join('\n');
 }
+
+function openPreview() {
+  const items = getCurrentRanking(state.tournament).map(itemById);
+  const list = el('preview-list');
+  list.innerHTML = '';
+  for (const item of items) {
+    const li = document.createElement('li');
+    const link = document.createElement('a');
+    link.href = item.url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = item.title;
+    li.appendChild(link);
+    list.appendChild(li);
+  }
+  el('preview-modal').classList.remove('hidden');
+}
+
+function closePreview() {
+  el('preview-modal').classList.add('hidden');
+}
+
+el('preview-btn').addEventListener('click', openPreview);
+el('preview-close').addEventListener('click', closePreview);
+el('preview-modal').addEventListener('click', (e) => {
+  if (e.target === el('preview-modal')) closePreview();
+});
 
 function renderResults() {
   cleanupMedia('a');

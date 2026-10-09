@@ -9,6 +9,7 @@ import {
   isComplete,
   undo,
   shuffleIds,
+  getCurrentRanking,
 } from '../src/tournament.js';
 
 const choose = (a, b) => (a < b ? a : b);
@@ -139,4 +140,27 @@ test('a shuffled order still ranks to a valid complete ranking', () => {
   const s = playAll(shuffled);
   assert.deepEqual(getRanking(s), [...ids].sort((a, b) => a - b));
   assert.equal(getProgress(s).percent, 100);
+});
+
+test('getCurrentRanking is a full permutation even while incomplete', () => {
+  const ids = [3, 1, 2, 0];
+  const preview = getCurrentRanking(createTournament(ids));
+  assert.equal(preview.length, ids.length);
+  assert.deepEqual([...preview].sort((a, b) => a - b), [...ids].sort((a, b) => a - b));
+});
+
+test('getCurrentRanking respects decisions already made', () => {
+  let s = createTournament([2, 1, 0]);
+  const m = nextMatchup(s);
+  const winner = Math.min(m.a, m.b);
+  const loser = Math.max(m.a, m.b);
+  s = recordWinner(s, winner);
+  const preview = getCurrentRanking(s);
+  assert.deepEqual([...preview].sort((a, b) => a - b), [0, 1, 2]);
+  assert.ok(preview.indexOf(winner) < preview.indexOf(loser));
+});
+
+test('getCurrentRanking matches getRanking once complete', () => {
+  const s = playAll([4, 0, 3, 1, 2]);
+  assert.deepEqual(getCurrentRanking(s), getRanking(s));
 });

@@ -83,6 +83,10 @@ export function getRanking(state) {
   return r.pending ? null : r.ranking;
 }
 
+export function getCurrentRanking(state) {
+  return replay(state).ranking;
+}
+
 export function getProgress(state) {
   const r = replay(state);
   const complete = r.pending === null;
