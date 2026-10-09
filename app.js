@@ -1,5 +1,6 @@
 import { parseCsv } from './src/csv.js';
-import { createTournament } from './src/tournament.js';
+import { createTournament, nextMatchup, recordWinner, getProgress, isComplete } from './src/tournament.js';
+import { fetchVideoForItem } from './src/resolve.js';
 import { save, load, clear } from './src/storage.js';
 
 const CSV_URL = 'krisgo%20opening%20list.csv';
@@ -79,7 +80,132 @@ async function init() {
   showScreen('start');
 }
 
-function renderMatch() {}
+const resolved = new Map();
+const resolving = new Set();
+
+async function ensureResolved(item) {
+  if (resolved.has(item.id) || resolving.has(item.id)) return;
+  resolving.add(item.id);
+  const data = await fetchVideoForItem(item);
+  resolved.set(item.id, data);
+  resolving.delete(item.id);
+}
+
+function itemById(id) {
+  return state.items.find((i) => i.id === id);
+}
+
+function renderPanel(side, item) {
+  const panel = el(`panel-${side}`);
+  panel.dataset.id = String(item.id);
+  const info = resolved.get(item.id);
+  const muted = panel.dataset.muted !== 'false';
+  panel.innerHTML = '';
+
+  const title = document.createElement('div');
+  title.className = 'title';
+  title.textContent = item.title;
+  panel.appendChild(title);
+
+  const controls = document.createElement('div');
+  controls.className = 'controls';
+
+  if (info && info.videoUrl) {
+    const video = document.createElement('video');
+    video.src = info.videoUrl;
+    video.muted = muted;
+    video.loop = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    video.addEventListener('error', () => {
+      video.replaceWith(fallback(item));
+    });
+    panel.appendChild(video);
+
+    const playBtn = document.createElement('button');
+    playBtn.type = 'button';
+    playBtn.textContent = 'Play/Pause';
+    playBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (video.paused) video.play();
+      else video.pause();
+    });
+
+    const unmuteBtn = document.createElement('button');
+    unmuteBtn.type = 'button';
+    unmuteBtn.textContent = muted ? 'Unmute' : 'Mute';
+    unmuteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.dataset.muted = panel.dataset.muted === 'false' ? 'true' : 'false';
+      video.muted = panel.dataset.muted === 'true';
+      unmuteBtn.textContent = video.muted ? 'Unmute' : 'Mute';
+    });
+
+    controls.append(playBtn, unmuteBtn);
+    panel.appendChild(controls);
+  } else {
+    panel.appendChild(fallback(item));
+    panel.appendChild(controls);
+  }
+
+  if (!info) {
+    ensureResolved(item).then(() => renderPanel(side, item));
+  }
+}
+
+function fallback(item) {
+  const box = document.createElement('div');
+  box.className = 'fallback';
+  const link = document.createElement('a');
+  link.href = item.url;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.textContent = 'Open on animethemes.moe';
+  box.textContent = 'Preview unavailable — ';
+  box.appendChild(link);
+  return box;
+}
+
+function pick(side) {
+  const panel = el(`panel-${side}`);
+  const id = Number(panel.dataset.id);
+  state.tournament = recordWinner(state.tournament, id);
+  persist();
+  if (isComplete(state.tournament)) renderResults();
+  else renderMatch();
+}
+
+function renderMatch() {
+  if (isComplete(state.tournament)) {
+    renderResults();
+    return;
+  }
+  const matchup = nextMatchup(state.tournament);
+  const a = itemById(matchup.a);
+  const b = itemById(matchup.b);
+  renderPanel('a', a);
+  renderPanel('b', b);
+
+  const progress = getProgress(state.tournament);
+  el('progress-bar').style.width = `${progress.percent}%`;
+  el('progress-label').textContent =
+    `Round ${progress.round}/${progress.totalRounds} · ${progress.done}/${progress.total}`;
+}
+
+el('panel-a').addEventListener('click', () => pick('a'));
+el('panel-b').addEventListener('click', () => pick('b'));
+
+document.addEventListener('keydown', (e) => {
+  if (el('match-screen').classList.contains('hidden')) return;
+  if (e.key === 'ArrowLeft') pick('a');
+  else if (e.key === 'ArrowRight') pick('b');
+  else if (e.key.toLowerCase() === 'u') {
+    const panel = el('panel-a');
+    panel.querySelector('.controls button:last-child')?.click();
+  }
+});
+
 function renderResults() {}
 
 init();
