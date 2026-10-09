@@ -1,0 +1,10 @@
+# AGENTS.md
+
+## Workflow rules
+
+- **Always create a git commit checkpoint before starting any significant change.** Commit the current working state first so there is a clean point to roll back to, then make the change.
+
+## Project commands
+
+- Run the site locally: `python -m http.server 8000` (or `npx serve`), then open `http://localhost:8000`. The site must be served over HTTP; it will not work via `file://`.
+- Run tests: `node --test`
