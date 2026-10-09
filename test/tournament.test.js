@@ -71,3 +71,33 @@ test('progress starts at zero with a positive total estimate', () => {
   assert.ok(p.total >= 100);
   assert.equal(p.complete, false);
 });
+
+test('getRanking returns null while the tournament is incomplete', () => {
+  const s = createTournament([3, 1, 2]);
+  assert.equal(getRanking(s), null);
+});
+
+test('progress reports exactly 100 percent when complete with an even count', () => {
+  const s = playAll([0, 3, 4, 5, 1, 2]);
+  const p = getProgress(s);
+  assert.equal(p.complete, true);
+  assert.equal(p.percent, 100);
+});
+
+test('progress reports exactly 100 percent when complete with an odd count', () => {
+  const s = playAll([1, 2, 0]);
+  const p = getProgress(s);
+  assert.equal(p.complete, true);
+  assert.equal(p.percent, 100);
+});
+
+test('progress never reaches 100 percent before completion', () => {
+  let s = createTournament([0, 2, 1, 3]);
+  let m;
+  while ((m = nextMatchup(s))) {
+    const p = getProgress(s);
+    assert.equal(p.complete, false);
+    assert.ok(p.percent <= 99);
+    s = recordWinner(s, choose(m.a, m.b));
+  }
+});

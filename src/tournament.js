@@ -92,14 +92,16 @@ export function getRanking(state) {
 
 export function getProgress(state) {
   const r = replay(state);
+  const complete = r.pending === null;
+  // total is an outcome-dependent estimate (always-left-wins simulation), not the exact comparison count.
   const total = Math.max(1, estimateTotal(state.ids));
   const done = state.winners.length;
   return {
     done,
     total,
-    percent: state.ids.length <= 1 ? 100 : Math.min(100, Math.round((done / total) * 100)),
+    percent: complete || state.ids.length <= 1 ? 100 : Math.min(99, Math.round((done / total) * 100)),
     round: r.pending ? r.pending.round : r.totalRounds,
     totalRounds: r.totalRounds,
-    complete: r.pending === null,
+    complete,
   };
 }
