@@ -27,6 +27,17 @@ Animethemes previews use a native video player; YouTube previews use the YouTube
 IFrame Player API. Both respond to hover-to-unmute, the master volume slider, and
 the Play/Pause control.
 
+## Pause and resume
+
+Progress is saved to browser `localStorage` after every pick, so it survives
+reloads, closing the browser, and restarting the server. Use **Pause & exit**
+mid-match to return to the start screen, then **Resume — N%** later. If you close
+the tab or reload mid-match, the start screen offers Resume automatically.
+
+localStorage is scoped to the origin (scheme, host, and port), so resume with the
+same URL (e.g. `http://localhost:8000`). Serving on a different port starts a
+separate save; editing `krisgo opening list.csv` invalidates older saves by design.
+
 ## Test
 
     node --test

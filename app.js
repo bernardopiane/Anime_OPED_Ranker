@@ -68,6 +68,17 @@ function isResumable(saved) {
   }
 }
 
+function updateResumeButton(savedRecord = load()) {
+  const resumeBtn = el('resume-btn');
+  if (isResumable(savedRecord)) {
+    resumeBtn.textContent = `Resume — ${getProgress(state.tournament).percent}%`;
+    resumeBtn.classList.remove('hidden');
+  } else {
+    resumeBtn.textContent = 'Resume';
+    resumeBtn.classList.add('hidden');
+  }
+}
+
 async function init() {
   try {
     state.items = await loadItems();
@@ -86,14 +97,15 @@ async function init() {
   state.tournament = createTournament(idsOf(state.items));
   if (isResumable(saved)) {
     state.tournament = { ids: [...saved.ids], winners: [...saved.winners] };
-    const resumeBtn = el('resume-btn');
-    resumeBtn.textContent = `Resume — ${getProgress(state.tournament).percent}%`;
-    resumeBtn.classList.remove('hidden');
   }
+  updateResumeButton(saved);
 
   el('status').textContent = `${state.items.length} openings ready.`;
 
   el('start-btn').addEventListener('click', () => {
+    if (isResumable(load()) && !confirm('Start a new ranking? Your saved progress will be replaced.')) {
+      return;
+    }
     const ids = idsOf(state.items);
     const order = el('shuffle').checked ? shuffleIds(ids) : ids;
     state.tournament = createTournament(order);
@@ -113,9 +125,7 @@ async function init() {
     resolved.clear();
     resolving.clear();
     state.tournament = createTournament(idsOf(state.items));
-    const resetResume = el('resume-btn');
-    resetResume.textContent = 'Resume';
-    resetResume.classList.add('hidden');
+    updateResumeButton();
     el('status').textContent = `${state.items.length} openings ready.`;
     showScreen('start');
   });
@@ -124,6 +134,16 @@ async function init() {
     state.tournament.winners = state.tournament.winners.slice(0, -1);
     persist();
     renderMatch();
+  });
+
+  el('pause-btn').addEventListener('click', () => {
+    persist();
+    cleanupMedia('a');
+    cleanupMedia('b');
+    activeSide = null;
+    lockedSide = null;
+    updateResumeButton();
+    showScreen('start');
   });
 
   const volumeInput = el('volume');
@@ -592,9 +612,7 @@ el('again-btn').addEventListener('click', () => {
   resolved.clear();
   resolving.clear();
   state.tournament = createTournament(state.items.map((i) => i.id));
-  const againResume = el('resume-btn');
-  againResume.textContent = 'Resume';
-  againResume.classList.add('hidden');
+  updateResumeButton();
   showScreen('start');
 });
 
