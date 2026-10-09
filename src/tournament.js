@@ -50,6 +50,15 @@ export function createTournament(ids) {
   return { ids: [...ids], winners: [] };
 }
 
+export function shuffleIds(ids, rng = Math.random) {
+  const out = [...ids];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 export function nextMatchup(state) {
   return replay(state).pending;
 }

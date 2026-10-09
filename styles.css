@@ -60,6 +60,8 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .panel .fallback a { color: var(--accent); }
 .volume { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.85rem; }
 .volume input { width: 8rem; accent-color: var(--accent); }
+.shuffle-toggle { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.75rem 0; color: var(--muted); font-size: 0.85rem; }
+.shuffle-toggle input { accent-color: var(--accent); }
 .panel .loading {
   display: flex;
   align-items: center;

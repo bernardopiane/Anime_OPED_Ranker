@@ -8,6 +8,7 @@ import {
   getProgress,
   isComplete,
   undo,
+  shuffleIds,
 } from '../src/tournament.js';
 
 const choose = (a, b) => (a < b ? a : b);
@@ -111,5 +112,31 @@ test('progress total is an upper bound matching the spec estimate', () => {
     assert.ok(getProgress(s).done <= getProgress(s).total);
     s = recordWinner(s, choose(m.a, m.b));
   }
+  assert.equal(getProgress(s).percent, 100);
+});
+
+test('shuffleIds returns a permutation without mutating the input', () => {
+  const ids = [0, 1, 2, 3, 4, 5, 6, 7];
+  const original = [...ids];
+  const shuffled = shuffleIds(ids);
+  assert.deepEqual(ids, original);
+  assert.deepEqual([...shuffled].sort((a, b) => a - b), original);
+});
+
+test('shuffleIds is deterministic for a given rng', () => {
+  const seq = [0.1, 0.9, 0.4, 0.7, 0.2];
+  const makeRng = () => {
+    let i = 0;
+    return () => seq[i++ % seq.length];
+  };
+  const ids = [0, 1, 2, 3, 4, 5];
+  assert.deepEqual(shuffleIds(ids, makeRng()), shuffleIds(ids, makeRng()));
+});
+
+test('a shuffled order still ranks to a valid complete ranking', () => {
+  const ids = [0, 1, 2, 3, 4, 5, 6];
+  const shuffled = shuffleIds(ids, () => 0.42);
+  const s = playAll(shuffled);
+  assert.deepEqual(getRanking(s), [...ids].sort((a, b) => a - b));
   assert.equal(getProgress(s).percent, 100);
 });

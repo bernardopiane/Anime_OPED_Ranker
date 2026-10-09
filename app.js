@@ -1,5 +1,5 @@
 import { parseCsv } from './src/csv.js';
-import { createTournament, nextMatchup, recordWinner, getProgress, isComplete, getRanking } from './src/tournament.js';
+import { createTournament, nextMatchup, recordWinner, getProgress, isComplete, getRanking, shuffleIds } from './src/tournament.js';
 import { fetchVideoForItem } from './src/resolve.js';
 import { save, load, clear } from './src/storage.js';
 import {
@@ -28,6 +28,7 @@ function showScreen(name) {
 function persist() {
   const ok = save({
     fingerprint: sourceFingerprint(state.items),
+    ids: state.tournament.ids,
     winners: state.tournament.winners,
     resolved: cacheEntries(resolved),
     version: RECORD_VERSION,
@@ -46,13 +47,21 @@ function idsOf(items) {
   return items.map((i) => i.id);
 }
 
+function isIdPermutation(candidate, ids) {
+  if (!Array.isArray(candidate) || candidate.length !== ids.length) return false;
+  const expected = new Set(ids);
+  if (expected.size !== ids.length) return false;
+  return candidate.every((id) => expected.has(id));
+}
+
 function isResumable(saved) {
   if (!isMatchingSource(saved, state.items) || saved.version !== RECORD_VERSION) return false;
   if (!Array.isArray(saved.winners) || saved.winners.length === 0) return false;
   const ids = idsOf(state.items);
+  if (!isIdPermutation(saved.ids, ids)) return false;
   if (saved.winners.some((winner) => !ids.includes(winner))) return false;
   try {
-    getProgress({ ids, winners: saved.winners });
+    getProgress({ ids: saved.ids, winners: saved.winners });
     return true;
   } catch {
     return false;
@@ -76,7 +85,7 @@ async function init() {
   }
   state.tournament = createTournament(idsOf(state.items));
   if (isResumable(saved)) {
-    state.tournament.winners = saved.winners;
+    state.tournament = { ids: [...saved.ids], winners: [...saved.winners] };
     const resumeBtn = el('resume-btn');
     resumeBtn.textContent = `Resume — ${getProgress(state.tournament).percent}%`;
     resumeBtn.classList.remove('hidden');
@@ -85,7 +94,9 @@ async function init() {
   el('status').textContent = `${state.items.length} openings ready.`;
 
   el('start-btn').addEventListener('click', () => {
-    state.tournament = createTournament(idsOf(state.items));
+    const ids = idsOf(state.items);
+    const order = el('shuffle').checked ? shuffleIds(ids) : ids;
+    state.tournament = createTournament(order);
     persist();
     showScreen('match');
     renderMatch();
