@@ -268,7 +268,7 @@ function renderPanel(side, item) {
     media[side] = { video, button: unmuteBtn };
 
     video.addEventListener('error', () => {
-      video.replaceWith(fallback(item));
+      video.replaceWith(fallback(item, side));
       scrub.remove();
       controls.remove();
       media[side] = { video: null, button: null };
@@ -276,7 +276,7 @@ function renderPanel(side, item) {
       applyAudio();
     });
   } else if (info) {
-    panel.appendChild(fallback(item));
+    panel.appendChild(fallback(item, side));
     panel.appendChild(controls);
     media[side] = { video: null, button: null };
   } else {
@@ -301,7 +301,7 @@ function loadingBox() {
   return box;
 }
 
-function fallback(item) {
+function fallback(item, side) {
   const box = document.createElement('div');
   box.className = 'fallback';
   const link = document.createElement('a');
@@ -311,6 +311,18 @@ function fallback(item) {
   link.textContent = 'Open on animethemes.moe';
   box.textContent = 'Preview unavailable — ';
   box.appendChild(link);
+
+  const retryBtn = document.createElement('button');
+  retryBtn.type = 'button';
+  retryBtn.className = 'retry';
+  retryBtn.textContent = 'Retry';
+  retryBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    resolved.delete(item.id);
+    const panel = el(`panel-${side}`);
+    if (panel && panel.dataset.id === String(item.id)) renderPanel(side, item);
+  });
+  box.appendChild(retryBtn);
   return box;
 }
 

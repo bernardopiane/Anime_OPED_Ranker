@@ -58,6 +58,16 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .panel .controls button { padding: 0.25rem 0.6rem; }
 .panel .fallback { color: var(--muted); font-size: 0.85rem; }
 .panel .fallback a { color: var(--accent); }
+.panel .fallback .retry {
+  margin-left: 0.5rem;
+  background: none;
+  border: 1px solid var(--muted);
+  color: var(--accent);
+  border-radius: 4px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
 .volume { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.85rem; }
 .volume input { width: 8rem; accent-color: var(--accent); }
 .shuffle-toggle { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.75rem 0; color: var(--muted); font-size: 0.85rem; }
