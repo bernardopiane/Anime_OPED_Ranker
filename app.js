@@ -25,7 +25,7 @@ function persist() {
     resolved: [...resolved.entries()],
     version: 1,
   });
-  if (!ok) el('warning').classList.remove('hidden');
+  el('warning').classList.toggle('hidden', ok);
 }
 
 async function loadItems() {
@@ -100,6 +100,8 @@ async function init() {
   el('reset-btn').addEventListener('click', () => {
     if (!confirm('Clear all progress?')) return;
     clear();
+    resolved.clear();
+    resolving.clear();
     state.tournament = createTournament(idsOf(state.items));
     const resetResume = el('resume-btn');
     resetResume.textContent = 'Resume';
@@ -167,11 +169,6 @@ function renderPanel(side, item) {
     video.autoplay = true;
     video.playsInline = true;
     video.preload = 'metadata';
-    video.addEventListener('error', () => {
-      video.replaceWith(fallback(item));
-      scrub.remove();
-      controls.remove();
-    });
     panel.appendChild(video);
 
     const scrub = document.createElement('input');
@@ -217,6 +214,12 @@ function renderPanel(side, item) {
 
     controls.append(playBtn, unmuteBtn);
     panel.appendChild(controls);
+
+    video.addEventListener('error', () => {
+      video.replaceWith(fallback(item));
+      scrub.remove();
+      controls.remove();
+    });
   } else {
     panel.appendChild(fallback(item));
     panel.appendChild(controls);
@@ -342,6 +345,8 @@ el('download-btn').addEventListener('click', () => {
 el('again-btn').addEventListener('click', () => {
   if (!confirm('Clear progress and start over?')) return;
   clear();
+  resolved.clear();
+  resolving.clear();
   state.tournament = createTournament(state.items.map((i) => i.id));
   const againResume = el('resume-btn');
   againResume.textContent = 'Resume';
