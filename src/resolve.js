@@ -27,6 +27,7 @@ export function pickVideo(anime, theme, tags) {
 }
 
 export async function fetchVideoForItem(item) {
+  if (!item || typeof item.url !== 'string') return { videoUrl: null, pageUrl: item?.url };
   try {
     const parsed = parseCsvUrl(item.url);
     if (!parsed) return { videoUrl: null, pageUrl: item.url };

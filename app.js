@@ -32,6 +32,21 @@ function idsOf(items) {
   return items.map((i) => i.id);
 }
 
+function isResumable(saved) {
+  if (!saved || !Array.isArray(saved.items) || !Array.isArray(saved.winners)) return false;
+  if (saved.winners.length === 0) return false;
+  const ids = idsOf(state.items);
+  if (saved.items.length !== ids.length) return false;
+  if (saved.items.some((item, i) => !item || item.id !== ids[i])) return false;
+  if (saved.winners.some((winner) => !ids.includes(winner))) return false;
+  try {
+    getProgress({ ids, winners: saved.winners });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function init() {
   try {
     state.items = await loadItems();
@@ -41,9 +56,8 @@ async function init() {
   }
 
   const saved = load();
-  const resumable = saved && saved.items && saved.items.length === state.items.length;
   state.tournament = createTournament(idsOf(state.items));
-  if (resumable && saved.winners && saved.winners.length > 0) {
+  if (isResumable(saved)) {
     state.tournament.winners = saved.winners;
     el('resume-btn').classList.remove('hidden');
   }
@@ -130,6 +144,7 @@ function renderPanel(side, item) {
     video.preload = 'metadata';
     video.addEventListener('error', () => {
       video.replaceWith(fallback(item));
+      controls.remove();
     });
     panel.appendChild(video);
 
@@ -255,9 +270,14 @@ function renderResults() {
 }
 
 el('copy-btn').addEventListener('click', async () => {
-  await navigator.clipboard.writeText(toText(rankedItems()));
-  el('copy-btn').textContent = 'Copied!';
-  setTimeout(() => (el('copy-btn').textContent = 'Copy'), 1500);
+  const btn = el('copy-btn');
+  try {
+    await navigator.clipboard.writeText(toText(rankedItems()));
+    btn.textContent = 'Copied!';
+  } catch {
+    btn.textContent = 'Copy failed';
+  }
+  setTimeout(() => (btn.textContent = 'Copy'), 1500);
 });
 
 el('download-btn').addEventListener('click', () => {
@@ -267,7 +287,7 @@ el('download-btn').addEventListener('click', () => {
   a.href = url;
   a.download = 'krisgo-top-100.csv';
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 });
 
 el('again-btn').addEventListener('click', () => {

@@ -12,18 +12,6 @@ function merge(left, right, compare) {
   return out;
 }
 
-function sortRuns(ids, compare) {
-  let runs = ids.map((id) => [id]);
-  while (runs.length > 1) {
-    const next = [];
-    for (let i = 0; i < runs.length; i += 2) {
-      next.push(i + 1 < runs.length ? merge(runs[i], runs[i + 1], compare) : runs[i]);
-    }
-    runs = next;
-  }
-  return runs[0] || [];
-}
-
 function replay(state) {
   const totalRounds = state.ids.length <= 1 ? 1 : Math.ceil(Math.log2(state.ids.length));
   let wi = 0;
@@ -53,13 +41,9 @@ function replay(state) {
 }
 
 function estimateTotal(ids) {
-  let count = 0;
-  const compare = (a) => {
-    count += 1;
-    return a;
-  };
-  sortRuns(ids, compare);
-  return count;
+  const n = ids.length;
+  if (n <= 1) return 1;
+  return n * Math.ceil(Math.log2(n)) - n + 1;
 }
 
 export function createTournament(ids) {
@@ -93,7 +77,6 @@ export function getRanking(state) {
 export function getProgress(state) {
   const r = replay(state);
   const complete = r.pending === null;
-  // total is an outcome-dependent estimate (always-left-wins simulation), not the exact comparison count.
   const total = Math.max(1, estimateTotal(state.ids));
   const done = state.winners.length;
   return {

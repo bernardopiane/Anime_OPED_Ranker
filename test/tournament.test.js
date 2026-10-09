@@ -101,3 +101,15 @@ test('progress never reaches 100 percent before completion', () => {
     s = recordWinner(s, choose(m.a, m.b));
   }
 });
+
+test('progress total is an upper bound matching the spec estimate', () => {
+  const ids = Array.from({ length: 100 }, (_, i) => i);
+  assert.equal(getProgress(createTournament(ids)).total, 100 * 7 - 100 + 1);
+  let s = createTournament([...ids].reverse());
+  let m;
+  while ((m = nextMatchup(s))) {
+    assert.ok(getProgress(s).done <= getProgress(s).total);
+    s = recordWinner(s, choose(m.a, m.b));
+  }
+  assert.equal(getProgress(s).percent, 100);
+});
