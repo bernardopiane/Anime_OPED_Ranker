@@ -22,6 +22,5 @@ export function clear() {
   try {
     localStorage.removeItem(KEY);
   } catch {
-    /* ignore */
   }
 }
