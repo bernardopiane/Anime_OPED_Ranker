@@ -8,6 +8,8 @@ import {
   isMatchingSource,
   cacheEntries,
   hydrateEntries,
+  videoCacheEntries,
+  hydrateVideoCache,
 } from './src/cache.js';
 
 const CSV_URL = 'krisgo%20opening%20list.csv';
@@ -31,6 +33,7 @@ function persist() {
     ids: state.tournament.ids,
     winners: state.tournament.winners,
     resolved: cacheEntries(resolved),
+    videos: videoCacheEntries(resolved, state.items),
     version: RECORD_VERSION,
     volume: masterVolume,
   });
@@ -93,6 +96,9 @@ async function init() {
   }
   if (isMatchingSource(saved, state.items) && saved.version === RECORD_VERSION) {
     for (const [id, info] of hydrateEntries(saved.resolved)) resolved.set(id, info);
+  }
+  if (saved && saved.version === RECORD_VERSION) {
+    for (const [id, info] of hydrateVideoCache(saved.videos, state.items)) resolved.set(id, info);
   }
   state.tournament = createTournament(idsOf(state.items));
   if (isResumable(saved)) {

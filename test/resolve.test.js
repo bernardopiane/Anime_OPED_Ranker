@@ -118,13 +118,53 @@ test('returns null for a non-string url', () => {
 test('fetchVideoForItem resolves to a null video when fetch rejects', async (t) => {
   stubFetch(t, () => Promise.reject(new Error('network down')));
   const item = { url: 'https://animethemes.moe/anime/noragami/OP1-NCBD1080' };
-  assert.deepEqual(await fetchVideoForItem(item), { videoUrl: null, pageUrl: item.url });
+  assert.deepEqual(await fetchVideoForItem(item, { attempts: 1 }), { videoUrl: null, pageUrl: item.url });
 });
 
 test('fetchVideoForItem resolves to a null video when the response is not ok', async (t) => {
   stubFetch(t, async () => ({ ok: false, status: 500 }));
   const item = { url: 'https://animethemes.moe/anime/noragami/OP1-NCBD1080' };
-  assert.deepEqual(await fetchVideoForItem(item), { videoUrl: null, pageUrl: item.url });
+  assert.deepEqual(await fetchVideoForItem(item, { attempts: 1 }), { videoUrl: null, pageUrl: item.url });
+});
+
+test('fetchVideoForItem retries a rate-limited response and can succeed', async (t) => {
+  let calls = 0;
+  stubFetch(t, async () => {
+    calls += 1;
+    if (calls < 3) return { ok: false, status: 429 };
+    return { ok: true, status: 200, json: async () => ({ anime }) };
+  });
+  const item = { url: 'https://animethemes.moe/anime/noragami/OP1-NCBD1080' };
+  assert.deepEqual(await fetchVideoForItem(item, { backoff: () => 0 }), {
+    videoUrl: 'https://v.animethemes.moe/Noragami-OP1.webm',
+    pageUrl: item.url,
+  });
+  assert.equal(calls, 3);
+});
+
+test('fetchVideoForItem gives up after the retry budget on repeated 429s', async (t) => {
+  let calls = 0;
+  stubFetch(t, async () => {
+    calls += 1;
+    return { ok: false, status: 429 };
+  });
+  const item = { url: 'https://animethemes.moe/anime/noragami/OP1-NCBD1080' };
+  assert.deepEqual(await fetchVideoForItem(item, { attempts: 3, backoff: () => 0 }), {
+    videoUrl: null,
+    pageUrl: item.url,
+  });
+  assert.equal(calls, 3);
+});
+
+test('fetchVideoForItem does not retry a non-retryable status', async (t) => {
+  let calls = 0;
+  stubFetch(t, async () => {
+    calls += 1;
+    return { ok: false, status: 404 };
+  });
+  const item = { url: 'https://animethemes.moe/anime/noragami/OP1-NCBD1080' };
+  assert.deepEqual(await fetchVideoForItem(item, { backoff: () => 0 }), { videoUrl: null, pageUrl: item.url });
+  assert.equal(calls, 1);
 });
 
 test('fetchVideoForItem resolves to a null video when no theme matches', async (t) => {

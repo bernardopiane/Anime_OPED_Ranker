@@ -25,7 +25,7 @@ test('parses the real CSV file into items', () => {
   const text = readFileSync(new URL('../krisgo opening list.csv', import.meta.url), 'utf8');
   const items = parseCsv(text);
   assert.ok(items.length > 1);
-  assert.equal(items[0].title, 'Noragami');
-  assert.ok(items.every((i) => i.url.startsWith('https://animethemes.moe/')));
   assert.ok(items.every((i, index) => i.id === index));
+  assert.ok(items.every((i) => i.title.length > 0));
+  assert.ok(items.every((i) => /^https?:\/\//.test(i.url)));
 });

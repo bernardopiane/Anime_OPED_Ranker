@@ -34,15 +34,45 @@ export function pickVideo(anime, theme, tags) {
   return videos[0].link || null;
 }
 
-export async function fetchVideoForItem(item) {
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableStatus(status) {
+  return status === 429 || status >= 500;
+}
+
+async function fetchWithRetry(url, attempts, backoff) {
+  let lastError = null;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (attempt > 0) await sleep(backoff(attempt - 1));
+    try {
+      const res = await fetch(url);
+      if (res && isRetryableStatus(res.status)) {
+        lastError = new Error(`HTTP ${res.status}`);
+        continue;
+      }
+      return res;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error('Request failed');
+}
+
+export async function fetchVideoForItem(item, options = {}) {
   if (!item || typeof item.url !== 'string') return { videoUrl: null, pageUrl: item?.url };
   const youtubeId = parseYouTubeUrl(item.url);
   if (youtubeId) return { videoUrl: null, youtubeId, pageUrl: item.url };
+  const attempts = options.attempts ?? 3;
+  const backoff = options.backoff ?? ((n) => 300 * 3 ** n);
   try {
     const parsed = parseCsvUrl(item.url);
     if (!parsed) return { videoUrl: null, pageUrl: item.url };
-    const res = await fetch(
+    const res = await fetchWithRetry(
       `https://api.animethemes.moe/anime/${parsed.slug}?include=animethemes.animethemeentries.videos`,
+      attempts,
+      backoff,
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();

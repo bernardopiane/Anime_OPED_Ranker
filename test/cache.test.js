@@ -6,6 +6,8 @@ import {
   isMatchingSource,
   cacheEntries,
   hydrateEntries,
+  videoCacheEntries,
+  hydrateVideoCache,
 } from '../src/cache.js';
 
 const items = [
@@ -81,4 +83,40 @@ test('hydrateEntries tolerates a non-array input', () => {
 
 test('RECORD_VERSION is defined', () => {
   assert.equal(typeof RECORD_VERSION, 'number');
+});
+
+test('videoCacheEntries maps the current items by url and skips failures', () => {
+  const resolved = new Map([
+    [0, { videoUrl: 'https://v.animethemes.moe/Noragami-OP1.webm', pageUrl: items[0].url }],
+    [1, { videoUrl: null, pageUrl: items[1].url }],
+  ]);
+  assert.deepEqual(videoCacheEntries(resolved, items), {
+    [items[0].url]: { videoUrl: 'https://v.animethemes.moe/Noragami-OP1.webm' },
+  });
+});
+
+test('videoCacheEntries records YouTube ids', () => {
+  const ytItems = [{ id: 0, title: 'X', url: 'https://youtu.be/j9xlqXCSBIc' }];
+  const resolved = new Map([[0, { videoUrl: null, youtubeId: 'j9xlqXCSBIc', pageUrl: ytItems[0].url }]]);
+  assert.deepEqual(videoCacheEntries(resolved, ytItems), {
+    'https://youtu.be/j9xlqXCSBIc': { youtubeId: 'j9xlqXCSBIc' },
+  });
+});
+
+test('hydrateVideoCache restores entries by url regardless of order', () => {
+  const cache = {
+    [items[0].url]: { videoUrl: 'https://v.animethemes.moe/Noragami-OP1.webm' },
+    [items[1].url]: { youtubeId: 'j9xlqXCSBIc' },
+  };
+  assert.deepEqual(hydrateVideoCache(cache, [...items].reverse()), [
+    [1, { videoUrl: null, youtubeId: 'j9xlqXCSBIc', pageUrl: items[1].url }],
+    [0, { videoUrl: 'https://v.animethemes.moe/Noragami-OP1.webm', pageUrl: items[0].url }],
+  ]);
+});
+
+test('hydrateVideoCache ignores unknown urls and malformed entries', () => {
+  assert.deepEqual(hydrateVideoCache(undefined, items), []);
+  assert.deepEqual(hydrateVideoCache({ 'https://other.example/x': { videoUrl: 'a' } }, items), []);
+  assert.deepEqual(hydrateVideoCache({ [items[0].url]: { pageUrl: 'x' } }, items), []);
+  assert.deepEqual(hydrateVideoCache({ [items[0].url]: 'nope' }, items), []);
 });

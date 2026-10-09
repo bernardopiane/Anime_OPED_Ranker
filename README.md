@@ -38,6 +38,15 @@ localStorage is scoped to the origin (scheme, host, and port), so resume with th
 same URL (e.g. `http://localhost:8000`). Serving on a different port starts a
 separate save; editing `krisgo opening list.csv` invalidates older saves by design.
 
+## Caching
+
+Resolved previews are cached in `localStorage`, keyed by the entry's URL, so
+unchanged rows are never fetched again — even if you add, remove, or reorder
+entries. This keeps the number of requests to the animethemes.moe API low. If the
+API replies with a rate-limit (429) or server error (5xx), the app retries with
+exponential backoff before giving up; a failed preview can always be re-fetched
+with the Retry button.
+
 ## Test
 
     node --test
