@@ -10,6 +10,14 @@ export function parseCsvUrl(url) {
   return { slug, theme, tags };
 }
 
+export function parseYouTubeUrl(url) {
+  if (typeof url !== 'string') return null;
+  const m = url.match(
+    /(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[?&#]|$)/i,
+  );
+  return m ? m[1] : null;
+}
+
 export function pickVideo(anime, theme, tags) {
   const themes = (anime && anime.animethemes) || [];
   const match = themes.find((t) => t.slug === theme);
@@ -28,6 +36,8 @@ export function pickVideo(anime, theme, tags) {
 
 export async function fetchVideoForItem(item) {
   if (!item || typeof item.url !== 'string') return { videoUrl: null, pageUrl: item?.url };
+  const youtubeId = parseYouTubeUrl(item.url);
+  if (youtubeId) return { videoUrl: null, youtubeId, pageUrl: item.url };
   try {
     const parsed = parseCsvUrl(item.url);
     if (!parsed) return { videoUrl: null, pageUrl: item.url };

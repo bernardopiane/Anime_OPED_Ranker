@@ -45,6 +45,21 @@ test('cacheEntries drops failed resolutions and keeps successes', () => {
   ]);
 });
 
+test('cacheEntries keeps YouTube resolutions that have no direct video url', () => {
+  const resolved = new Map([
+    [3, { videoUrl: null, youtubeId: 'j9xlqXCSBIc', pageUrl: 'https://youtu.be/j9xlqXCSBIc' }],
+    [4, { videoUrl: null, pageUrl: 'https://animethemes.moe/anime/x/OP1' }],
+  ]);
+  assert.deepEqual(cacheEntries(resolved), [
+    [3, { videoUrl: null, youtubeId: 'j9xlqXCSBIc', pageUrl: 'https://youtu.be/j9xlqXCSBIc' }],
+  ]);
+});
+
+test('hydrateEntries keeps malformed-free YouTube entries', () => {
+  const entries = [[5, { videoUrl: null, youtubeId: 'j9xlqXCSBIc', pageUrl: 'z' }]];
+  assert.deepEqual(hydrateEntries(entries), entries);
+});
+
 test('hydrateEntries ignores malformed and failed entries', () => {
   const entries = [
     [0, { videoUrl: 'https://v.animethemes.moe/A.webm', pageUrl: 'a' }],

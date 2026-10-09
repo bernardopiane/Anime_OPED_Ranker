@@ -141,8 +141,8 @@ const resolved = new Map();
 const resolving = new Map();
 
 const media = {
-  a: { video: null, button: null },
-  b: { video: null, button: null },
+  a: { adapter: null, button: null },
+  b: { adapter: null, button: null },
 };
 let activeSide = null;
 let lockedSide = null;
@@ -150,14 +150,21 @@ let masterVolume = 1;
 
 function applyAudio() {
   for (const side of ['a', 'b']) {
-    const { video, button } = media[side];
+    const entry = media[side];
     const muted = side !== activeSide;
-    if (video) {
-      video.muted = muted;
-      video.volume = masterVolume;
-    }
-    if (button) button.textContent = muted ? 'Unmute' : 'Mute';
+    if (entry && entry.adapter) entry.adapter.setAudio(muted, masterVolume);
+    if (entry && entry.button) entry.button.textContent = muted ? 'Unmute' : 'Mute';
   }
+}
+
+function cleanupMedia(side) {
+  const entry = media[side];
+  if (entry && entry.adapter && entry.adapter.destroy) {
+    try {
+      entry.adapter.destroy();
+    } catch {}
+  }
+  media[side] = { adapter: null, button: null };
 }
 
 function setActive(side) {
@@ -200,8 +207,114 @@ function itemById(id) {
   return state.items.find((i) => i.id === id);
 }
 
+let ytApiPromise = null;
+
+function loadYouTubeApi() {
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise((resolve, reject) => {
+    if (window.YT && window.YT.Player) {
+      resolve(window.YT);
+      return;
+    }
+    const previous = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof previous === 'function') previous();
+      resolve(window.YT);
+    };
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    tag.async = true;
+    tag.onerror = () => reject(new Error('YouTube IFrame API failed to load'));
+    document.head.appendChild(tag);
+  });
+  return ytApiPromise;
+}
+
+function makeScrub() {
+  const scrub = document.createElement('input');
+  scrub.type = 'range';
+  scrub.className = 'scrub';
+  scrub.min = '0';
+  scrub.max = '1000';
+  scrub.value = '0';
+  return scrub;
+}
+
+function actionButton(label, onClick) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = label;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    onClick();
+  });
+  return btn;
+}
+
+function nativeAdapter(video) {
+  return {
+    setAudio(muted, volume) {
+      video.muted = muted;
+      video.volume = volume;
+    },
+    togglePlay() {
+      if (video.paused) video.play();
+      else video.pause();
+    },
+    destroy() {},
+  };
+}
+
+function youtubeAdapter(scrub) {
+  const adapter = {
+    ready: false,
+    player: null,
+    timer: null,
+    duration: 0,
+    setAudio(muted, volume) {
+      if (!adapter.ready || !adapter.player) return;
+      if (muted) adapter.player.mute();
+      else {
+        adapter.player.unMute();
+        adapter.player.setVolume(Math.round(volume * 100));
+      }
+    },
+    togglePlay() {
+      if (!adapter.ready || !adapter.player) return;
+      if (adapter.player.getPlayerState() === 1) adapter.player.pauseVideo();
+      else adapter.player.playVideo();
+    },
+    startScrub() {
+      adapter.timer = setInterval(() => {
+        if (!adapter.player) return;
+        adapter.duration = adapter.player.getDuration ? adapter.player.getDuration() : 0;
+        if (adapter.duration > 0) {
+          const t = adapter.player.getCurrentTime ? adapter.player.getCurrentTime() : 0;
+          scrub.value = String(Math.round((t / adapter.duration) * 1000));
+        }
+      }, 250);
+      scrub.addEventListener('input', () => {
+        if (adapter.player && adapter.duration > 0) {
+          adapter.player.seekTo((Number(scrub.value) / 1000) * adapter.duration, true);
+        }
+      });
+    },
+    destroy() {
+      if (adapter.timer) clearInterval(adapter.timer);
+      if (adapter.player && typeof adapter.player.destroy === 'function') {
+        try {
+          adapter.player.destroy();
+        } catch {}
+      }
+      adapter.player = null;
+    },
+  };
+  return adapter;
+}
+
 function renderPanel(side, item) {
   const panel = el(`panel-${side}`);
+  cleanupMedia(side);
   panel.dataset.id = String(item.id);
   const info = resolved.get(item.id);
   panel.innerHTML = '';
@@ -214,6 +327,12 @@ function renderPanel(side, item) {
   const controls = document.createElement('div');
   controls.className = 'controls';
 
+  const showFallback = () => {
+    panel.innerHTML = '';
+    panel.appendChild(title);
+    panel.appendChild(fallback(item, side));
+  };
+
   if (info && info.videoUrl) {
     const video = document.createElement('video');
     video.src = info.videoUrl;
@@ -224,12 +343,7 @@ function renderPanel(side, item) {
     video.preload = 'metadata';
     panel.appendChild(video);
 
-    const scrub = document.createElement('input');
-    scrub.type = 'range';
-    scrub.className = 'scrub';
-    scrub.min = '0';
-    scrub.max = '1000';
-    scrub.value = '0';
+    const scrub = makeScrub();
     const syncScrub = () => {
       if (Number.isFinite(video.duration) && video.duration > 0) {
         scrub.value = String(Math.round((video.currentTime / video.duration) * 1000));
@@ -246,42 +360,81 @@ function renderPanel(side, item) {
     scrub.addEventListener('pointerdown', (e) => e.stopPropagation());
     panel.appendChild(scrub);
 
-    const playBtn = document.createElement('button');
-    playBtn.type = 'button';
-    playBtn.textContent = 'Play/Pause';
-    playBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (video.paused) video.play();
-      else video.pause();
-    });
-
-    const unmuteBtn = document.createElement('button');
-    unmuteBtn.type = 'button';
-    unmuteBtn.textContent = 'Unmute';
-    unmuteBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleUnmute(side);
-    });
-
+    const adapter = nativeAdapter(video);
+    const playBtn = actionButton('Play/Pause', () => adapter.togglePlay());
+    const unmuteBtn = actionButton('Unmute', () => toggleUnmute(side));
     controls.append(playBtn, unmuteBtn);
     panel.appendChild(controls);
-    media[side] = { video, button: unmuteBtn };
+    media[side] = { adapter, button: unmuteBtn };
 
     video.addEventListener('error', () => {
-      video.replaceWith(fallback(item, side));
-      scrub.remove();
-      controls.remove();
-      media[side] = { video: null, button: null };
+      if (media[side].adapter !== adapter) return;
+      cleanupMedia(side);
       if (activeSide === side) activeSide = null;
+      showFallback();
       applyAudio();
     });
+  } else if (info && info.youtubeId) {
+    const holder = document.createElement('div');
+    holder.className = 'yt';
+    panel.appendChild(holder);
+
+    const scrub = makeScrub();
+    scrub.addEventListener('click', (e) => e.stopPropagation());
+    scrub.addEventListener('pointerdown', (e) => e.stopPropagation());
+    panel.appendChild(scrub);
+
+    const adapter = youtubeAdapter(scrub);
+    const playBtn = actionButton('Play/Pause', () => adapter.togglePlay());
+    const unmuteBtn = actionButton('Unmute', () => toggleUnmute(side));
+    controls.append(playBtn, unmuteBtn);
+    panel.appendChild(controls);
+    media[side] = { adapter, button: unmuteBtn };
+
+    const failed = () => {
+      if (media[side].adapter !== adapter) return;
+      cleanupMedia(side);
+      if (activeSide === side) activeSide = null;
+      showFallback();
+      applyAudio();
+    };
+
+    loadYouTubeApi()
+      .then((YT) => {
+        if (media[side].adapter !== adapter) return;
+        adapter.player = new YT.Player(holder, {
+          videoId: info.youtubeId,
+          width: '100%',
+          height: '100%',
+          playerVars: {
+            autoplay: 1,
+            mute: 1,
+            loop: 1,
+            playlist: info.youtubeId,
+            controls: 1,
+            modestbranding: 1,
+            rel: 0,
+            playsinline: 1,
+          },
+          events: {
+            onReady: () => {
+              if (media[side].adapter !== adapter) return;
+              adapter.ready = true;
+              adapter.setAudio(side !== activeSide, masterVolume);
+              adapter.startScrub();
+            },
+            onError: failed,
+          },
+        });
+      })
+      .catch(failed);
   } else if (info) {
     panel.appendChild(fallback(item, side));
     panel.appendChild(controls);
-    media[side] = { video: null, button: null };
+    media[side] = { adapter: null, button: null };
   } else {
     panel.appendChild(loadingBox());
-    media[side] = { video: null, button: null };
+    media[side] = { adapter: null, button: null };
   }
 
   applyAudio();
@@ -308,7 +461,7 @@ function fallback(item, side) {
   link.href = item.url;
   link.target = '_blank';
   link.rel = 'noopener';
-  link.textContent = 'Open on animethemes.moe';
+  link.textContent = /youtube\.com|youtu\.be/i.test(item.url) ? 'Open on YouTube' : 'Open on animethemes.moe';
   box.textContent = 'Preview unavailable — ';
   box.appendChild(link);
 
@@ -392,6 +545,10 @@ function toText(items) {
 }
 
 function renderResults() {
+  cleanupMedia('a');
+  cleanupMedia('b');
+  activeSide = null;
+  lockedSide = null;
   const items = rankedItems();
   const list = el('results-list');
   list.innerHTML = '';

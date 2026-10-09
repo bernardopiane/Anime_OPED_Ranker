@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCsvUrl, pickVideo, fetchVideoForItem } from '../src/resolve.js';
+import { parseCsvUrl, parseYouTubeUrl, pickVideo, fetchVideoForItem } from '../src/resolve.js';
 
 function stubFetch(t, impl) {
   const original = globalThis.fetch;
@@ -34,6 +34,38 @@ test('parses an ED theme', () => {
 
 test('returns null for a non-animethemes URL', () => {
   assert.equal(parseCsvUrl('https://example.com/foo'), null);
+});
+
+test('parses a YouTube video id from a watch URL', () => {
+  assert.equal(parseYouTubeUrl('https://www.youtube.com/watch?v=j9xlqXCSBIc'), 'j9xlqXCSBIc');
+});
+
+test('parses a youtu.be short URL', () => {
+  assert.equal(parseYouTubeUrl('https://youtu.be/j9xlqXCSBIc'), 'j9xlqXCSBIc');
+});
+
+test('parses an embed URL', () => {
+  assert.equal(parseYouTubeUrl('https://www.youtube.com/embed/j9xlqXCSBIc'), 'j9xlqXCSBIc');
+});
+
+test('parses a shorts URL', () => {
+  assert.equal(parseYouTubeUrl('https://www.youtube.com/shorts/j9xlqXCSBIc'), 'j9xlqXCSBIc');
+});
+
+test('parses a watch URL with extra parameters around v', () => {
+  assert.equal(parseYouTubeUrl('https://www.youtube.com/watch?list=PL123&v=j9xlqXCSBIc&t=42s'), 'j9xlqXCSBIc');
+  assert.equal(parseYouTubeUrl('https://www.youtube.com/watch?v=j9xlqXCSBIc&list=PL123'), 'j9xlqXCSBIc');
+});
+
+test('parses a short URL that carries extra parameters', () => {
+  assert.equal(parseYouTubeUrl('https://youtu.be/j9xlqXCSBIc?t=42'), 'j9xlqXCSBIc');
+});
+
+test('returns null for non-YouTube or malformed input', () => {
+  assert.equal(parseYouTubeUrl('https://animethemes.moe/anime/noragami/OP1'), null);
+  assert.equal(parseYouTubeUrl('https://www.youtube.com/watch?v=short'), null);
+  assert.equal(parseYouTubeUrl(undefined), null);
+  assert.equal(parseYouTubeUrl(42), null);
 });
 
 const anime = {
@@ -129,5 +161,20 @@ test('fetchVideoForItem does not throw when item.url is missing', async (t) => {
     throw new Error('fetch should not be called');
   });
   assert.deepEqual(await fetchVideoForItem({}), { videoUrl: null, pageUrl: undefined });
+  assert.equal(called, false);
+});
+
+test('fetchVideoForItem returns a YouTube id without fetching', async (t) => {
+  let called = false;
+  stubFetch(t, async () => {
+    called = true;
+    return { ok: true, status: 200, json: async () => ({}) };
+  });
+  const item = { url: 'https://www.youtube.com/watch?v=j9xlqXCSBIc' };
+  assert.deepEqual(await fetchVideoForItem(item), {
+    videoUrl: null,
+    youtubeId: 'j9xlqXCSBIc',
+    pageUrl: item.url,
+  });
   assert.equal(called, false);
 });

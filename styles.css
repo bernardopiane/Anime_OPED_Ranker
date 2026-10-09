@@ -52,6 +52,8 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
   background: var(--panel);
 }
 .panel video { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 6px; }
+.panel .yt { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 6px; overflow: hidden; }
+.panel iframe { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; border: 0; border-radius: 6px; }
 .panel .scrub { width: 100%; accent-color: var(--accent); }
 .panel .title { font-weight: 600; }
 .panel .controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }

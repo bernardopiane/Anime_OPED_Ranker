@@ -9,7 +9,7 @@ export function isMatchingSource(saved, items) {
 }
 
 export function cacheEntries(resolved) {
-  return [...resolved.entries()].filter(([, info]) => info && info.videoUrl);
+  return [...resolved.entries()].filter(([, info]) => info && (info.videoUrl || info.youtubeId));
 }
 
 export function hydrateEntries(entries) {
@@ -22,7 +22,7 @@ export function hydrateEntries(entries) {
       typeof entry[0] === 'number' &&
       entry[1] &&
       typeof entry[1] === 'object' &&
-      entry[1].videoUrl
+      (entry[1].videoUrl || entry[1].youtubeId)
     ) {
       out.push(entry);
     }
