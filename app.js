@@ -86,9 +86,14 @@ const resolving = new Set();
 async function ensureResolved(item) {
   if (resolved.has(item.id) || resolving.has(item.id)) return;
   resolving.add(item.id);
-  const data = await fetchVideoForItem(item);
-  resolved.set(item.id, data);
-  resolving.delete(item.id);
+  try {
+    const data = await fetchVideoForItem(item);
+    resolved.set(item.id, data);
+  } catch {
+    resolved.set(item.id, { videoUrl: null, pageUrl: item.url });
+  } finally {
+    resolving.delete(item.id);
+  }
 }
 
 function itemById(id) {
@@ -150,7 +155,10 @@ function renderPanel(side, item) {
   }
 
   if (!info) {
-    ensureResolved(item).then(() => renderPanel(side, item));
+    const id = item.id;
+    ensureResolved(item).then(() => {
+      if (panel.dataset.id === String(id)) renderPanel(side, item);
+    });
   }
 }
 
@@ -170,6 +178,8 @@ function fallback(item) {
 function pick(side) {
   const panel = el(`panel-${side}`);
   const id = Number(panel.dataset.id);
+  const matchup = nextMatchup(state.tournament);
+  if (!matchup || (id !== matchup.a && id !== matchup.b)) return;
   state.tournament = recordWinner(state.tournament, id);
   persist();
   if (isComplete(state.tournament)) renderResults();
@@ -198,6 +208,8 @@ el('panel-b').addEventListener('click', () => pick('b'));
 
 document.addEventListener('keydown', (e) => {
   if (el('match-screen').classList.contains('hidden')) return;
+  if (e.repeat) return;
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
   if (e.key === 'ArrowLeft') pick('a');
   else if (e.key === 'ArrowRight') pick('b');
   else if (e.key.toLowerCase() === 'u') {
