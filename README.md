@@ -8,6 +8,17 @@ previews. The list is read dynamically, so it works with any number of entries.
 
 The site must be served over HTTP (opening it as `file://` will not work).
 
+### Click to run (Windows)
+
+Double-click **`Start.cmd`**. It starts a local server on port 8000 and opens your
+browser. Keep the window open while you use the app; close it to stop the server.
+It uses Python if present, otherwise Node.js.
+
+To run without a console window, double-click **`Start Hidden.vbs`** instead, and
+use **`Stop.cmd`** to shut the server down afterwards.
+
+### Manual
+
     python -m http.server 8000
 
 or on Windows:

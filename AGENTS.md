@@ -6,5 +6,5 @@
 
 ## Project commands
 
-- Run the site locally: `python -m http.server 8000` (or `npx serve`), then open `http://localhost:8000`. The site must be served over HTTP; it will not work via `file://`.
+- Run the site locally: double-click `Start.cmd` (Windows), or run `python -m http.server 8000` (or `npx serve`), then open `http://localhost:8000`. The site must be served over HTTP; it will not work via `file://`.
 - Run tests: `node --test`
