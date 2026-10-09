@@ -5,7 +5,7 @@ set "FOUND="
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr /r /c:":%PORT% .*LISTENING"') do (
   taskkill /PID %%p /F >nul 2>&1
   if not errorlevel 1 (
-    echo Stopped the Krisgo Opening List server ^(PID %%p^).
+    echo Stopped the Anime OP/ED Ranker server ^(PID %%p^).
     set "FOUND=1"
   )
 )

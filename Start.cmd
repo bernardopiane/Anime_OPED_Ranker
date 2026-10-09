@@ -1,6 +1,6 @@
 @echo off
 setlocal enableextensions
-title Krisgo Opening List
+title Anime OP/ED Ranker
 cd /d "%~dp0"
 
 set "PORT=8000"
@@ -14,7 +14,7 @@ if defined LISTENING (
   exit /b 0
 )
 
-echo Starting Krisgo Opening List at %URL%
+echo Starting Anime OP/ED Ranker at %URL%
 echo Keep this window open while you use the app. Close it to stop the server.
 echo.
 

@@ -12,7 +12,7 @@ import {
   hydrateVideoCache,
 } from './src/cache.js';
 
-const CSV_URL = 'krisgo%20opening%20list.csv';
+const CSV_URL = 'opening%20list.csv';
 
 const state = {
   items: [],
@@ -715,7 +715,7 @@ el('download-btn').addEventListener('click', () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'krisgo-top-100.csv';
+  a.download = 'op-ed-ranking.csv';
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 0);
 });

@@ -22,7 +22,7 @@ test('skips blank lines', () => {
 });
 
 test('parses the real CSV file into items', () => {
-  const text = readFileSync(new URL('../krisgo opening list.csv', import.meta.url), 'utf8');
+  const text = readFileSync(new URL('../opening list.csv', import.meta.url), 'utf8');
   const items = parseCsv(text);
   assert.ok(items.length > 1);
   assert.ok(items.every((i, index) => i.id === index));
