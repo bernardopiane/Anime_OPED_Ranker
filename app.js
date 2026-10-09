@@ -1,5 +1,5 @@
 import { parseCsv } from './src/csv.js';
-import { createTournament, nextMatchup, recordWinner, getProgress, isComplete } from './src/tournament.js';
+import { createTournament, nextMatchup, recordWinner, getProgress, isComplete, getRanking } from './src/tournament.js';
 import { fetchVideoForItem } from './src/resolve.js';
 import { save, load, clear } from './src/storage.js';
 
@@ -223,6 +223,59 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-function renderResults() {}
+function rankedItems() {
+  return getRanking(state.tournament).map(itemById);
+}
+
+function toCsv(items) {
+  const esc = (s) => `"${String(s).replace(/"/g, '""')}"`;
+  const rows = items.map((item, i) => `${i + 1},${esc(item.title)},${esc(item.url)}`);
+  return ['rank,title,url', ...rows].join('\n');
+}
+
+function toText(items) {
+  return items.map((item, i) => `${i + 1}. ${item.title}`).join('\n');
+}
+
+function renderResults() {
+  const items = rankedItems();
+  const list = el('results-list');
+  list.innerHTML = '';
+  for (const item of items) {
+    const li = document.createElement('li');
+    const link = document.createElement('a');
+    link.href = item.url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = item.title;
+    li.appendChild(link);
+    list.appendChild(li);
+  }
+  showScreen('results');
+}
+
+el('copy-btn').addEventListener('click', async () => {
+  await navigator.clipboard.writeText(toText(rankedItems()));
+  el('copy-btn').textContent = 'Copied!';
+  setTimeout(() => (el('copy-btn').textContent = 'Copy'), 1500);
+});
+
+el('download-btn').addEventListener('click', () => {
+  const blob = new Blob([toCsv(rankedItems())], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'krisgo-top-100.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+el('again-btn').addEventListener('click', () => {
+  if (!confirm('Clear progress and start over?')) return;
+  clear();
+  state.tournament = createTournament(state.items.map((i) => i.id));
+  el('resume-btn').classList.add('hidden');
+  showScreen('start');
+});
 
 init();
