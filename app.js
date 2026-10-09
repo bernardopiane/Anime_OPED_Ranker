@@ -117,6 +117,38 @@ async function init() {
 const resolved = new Map();
 const resolving = new Map();
 
+const media = {
+  a: { video: null, button: null },
+  b: { video: null, button: null },
+};
+let activeSide = null;
+let lockedSide = null;
+
+function applyAudio() {
+  for (const side of ['a', 'b']) {
+    const { video, button } = media[side];
+    const muted = side !== activeSide;
+    if (video) video.muted = muted;
+    if (button) button.textContent = muted ? 'Unmute' : 'Mute';
+  }
+}
+
+function setActive(side) {
+  activeSide = side;
+  applyAudio();
+}
+
+function toggleUnmute(side) {
+  if (lockedSide === side) {
+    lockedSide = null;
+    activeSide = null;
+  } else {
+    lockedSide = side;
+    activeSide = side;
+  }
+  applyAudio();
+}
+
 function ensureResolved(item) {
   if (resolved.has(item.id)) return Promise.resolve();
   const inFlight = resolving.get(item.id);
@@ -145,7 +177,6 @@ function renderPanel(side, item) {
   const panel = el(`panel-${side}`);
   panel.dataset.id = String(item.id);
   const info = resolved.get(item.id);
-  const muted = panel.dataset.muted !== 'false';
   panel.innerHTML = '';
 
   const title = document.createElement('div');
@@ -159,7 +190,7 @@ function renderPanel(side, item) {
   if (info && info.videoUrl) {
     const video = document.createElement('video');
     video.src = info.videoUrl;
-    video.muted = muted;
+    video.muted = true;
     video.loop = true;
     video.autoplay = true;
     video.playsInline = true;
@@ -199,26 +230,31 @@ function renderPanel(side, item) {
 
     const unmuteBtn = document.createElement('button');
     unmuteBtn.type = 'button';
-    unmuteBtn.textContent = muted ? 'Unmute' : 'Mute';
+    unmuteBtn.textContent = 'Unmute';
     unmuteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      panel.dataset.muted = panel.dataset.muted === 'false' ? 'true' : 'false';
-      video.muted = panel.dataset.muted === 'true';
-      unmuteBtn.textContent = video.muted ? 'Unmute' : 'Mute';
+      toggleUnmute(side);
     });
 
     controls.append(playBtn, unmuteBtn);
     panel.appendChild(controls);
+    media[side] = { video, button: unmuteBtn };
 
     video.addEventListener('error', () => {
       video.replaceWith(fallback(item));
       scrub.remove();
       controls.remove();
+      media[side] = { video: null, button: null };
+      if (activeSide === side) activeSide = null;
+      applyAudio();
     });
   } else {
     panel.appendChild(fallback(item));
     panel.appendChild(controls);
+    media[side] = { video: null, button: null };
   }
+
+  applyAudio();
 
   if (!info) {
     const id = item.id;
@@ -257,6 +293,8 @@ function renderMatch() {
     renderResults();
     return;
   }
+  activeSide = null;
+  lockedSide = null;
   const matchup = nextMatchup(state.tournament);
   const a = itemById(matchup.a);
   const b = itemById(matchup.b);
@@ -271,6 +309,11 @@ function renderMatch() {
 
 el('panel-a').addEventListener('click', () => pick('a'));
 el('panel-b').addEventListener('click', () => pick('b'));
+
+el('panel-a').addEventListener('mouseenter', () => setActive('a'));
+el('panel-a').addEventListener('mouseleave', () => setActive(lockedSide));
+el('panel-b').addEventListener('mouseenter', () => setActive('b'));
+el('panel-b').addEventListener('mouseleave', () => setActive(lockedSide));
 
 document.addEventListener('keydown', (e) => {
   if (el('match-screen').classList.contains('hidden')) return;
