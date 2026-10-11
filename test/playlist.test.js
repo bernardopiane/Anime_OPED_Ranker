@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePlaylistId, watchUrl, toPlaylistCsv, extractFromHtml, mapApiItems, fetchPlaylist } from '../src/playlist.js';
+import { parsePlaylistId, watchUrl, toPlaylistCsv, extractFromHtml, mapApiItems, fetchPlaylist, assignIds } from '../src/playlist.js';
 import { parseCsv } from '../src/csv.js';
 
 test('parsePlaylistId reads the list param from a playlist URL', () => {
@@ -181,4 +181,24 @@ test('fetchPlaylist flags a missing key and network failures', async () => {
   await assert.rejects(fetchPlaylist('PL', '', {}), (e) => e.code === 'MISSING_KEY');
   const boom = async () => { throw new Error('down'); };
   await assert.rejects(fetchPlaylist('PL', 'K', { fetchImpl: boom }), (e) => e.code === 'NETWORK');
+});
+
+test('assignIds gives sequential numeric ids starting at 0 and preserves each title and url', () => {
+  const items = [
+    { title: 'A', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+    { title: 'B', url: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' },
+  ];
+  assert.deepEqual(assignIds(items), [
+    { id: 0, title: 'A', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+    { id: 1, title: 'B', url: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' },
+  ]);
+});
+
+test('assignIds returns an empty array for an empty input', () => {
+  assert.deepEqual(assignIds([]), []);
+});
+
+test('fetchPlaylist rejects with HTTP_ERROR when an ok response body is not valid JSON', async () => {
+  const badJsonFetch = async () => ({ ok: true, status: 200, json: async () => { throw new SyntaxError('bad'); } });
+  await assert.rejects(fetchPlaylist('PL', 'K', { fetchImpl: badJsonFetch }), (e) => e.code === 'HTTP_ERROR');
 });

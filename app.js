@@ -155,6 +155,8 @@ async function init() {
     masterVolume = saved.volume;
   }
 
+  initPlaylistTool();
+
   if (saved && saved.custom === true && isValidItems(saved.items)) {
     state.items = saved.items;
     state.customSource = true;
@@ -181,7 +183,6 @@ async function init() {
   updateResumeButton(saved);
   updateSourceLabel();
 
-  initPlaylistTool();
   el('start-btn').addEventListener('click', () => {
     if (isResumable(load()) && !confirm('Start a new ranking? Your saved progress will be replaced.')) {
       return;
