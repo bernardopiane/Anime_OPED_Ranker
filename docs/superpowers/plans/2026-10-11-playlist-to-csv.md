@@ -878,11 +878,11 @@ In the same session (before clicking Use), evaluate `toPlaylistCsv` output indir
 - [ ] **Step 4: Commit any fix (only if Steps 1–3 found a problem)**
 
 ```bash
-git add -A
+git add src/playlist.js test/playlist.test.js index.html styles.css app.js
 git commit -m "Fix playlist-to-CSV issues found in end-to-end verification"
 ```
 
-If nothing needed fixing, make no commit.
+Never `git add -A` / `git add .` — the untracked `opening list.csv` must not be staged. If nothing needed fixing, make no commit.
 
 ---
 
