@@ -1,0 +1,15 @@
+[
+  {
+    "date": "2026-10-11",
+    "brief": "Anime OP/ED Ranker — head-to-head duel app that builds a personal ranking; audience anime fans; tone sleek, light, restrained, not corporate, not extravagant.",
+    "genre": "modern-minimal",
+    "theme": "Coral",
+    "macrostructure": "Marquee Hero",
+    "nav": "N9 Edge-aligned minimal",
+    "footer": "Ft2 Inline-rule single line",
+    "enrichment": "none",
+    "palette_mode": "light (warm paper oklch 97.5% 0.010 48, single coral accent oklch 45% 0.15 30)",
+    "type": "system-ui display+body + ui-monospace outlier (rank numerals, VS mark); no web fonts",
+    "notes": "Dark→light rewrite of prior Broadcast Showdown build; removed gradient text/gradients/side-stripes/eyebrows/glow; one accent; preserves test/styles.test.js layout contracts."
+  }
+]
