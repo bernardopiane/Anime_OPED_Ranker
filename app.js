@@ -630,7 +630,7 @@ function renderMatch() {
   const progress = getProgress(state.tournament);
   el('progress-bar').style.transform = `scaleX(${progress.percent / 100})`;
   el('progress-label').textContent =
-    `Round ${progress.round}/${progress.totalRounds} · ${progress.done}/${progress.total}`;
+    `Round ${progress.round} of ${progress.totalRounds} · ${progress.percent}%`;
 }
 
 el('panel-a').addEventListener('click', () => pick('a'));

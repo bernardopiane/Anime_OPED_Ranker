@@ -104,40 +104,42 @@ test('progress never reaches 100 percent before completion', () => {
   }
 });
 
-test('progress total tracks the live replay count, not a worst-case estimate', () => {
+test('progress total is fixed merge work and the bar only moves forward', () => {
   const ids = Array.from({ length: 6 }, (_, i) => i + 1);
   const start = getProgress(createTournament(ids));
   assert.equal(start.done, 0);
-  assert.ok(start.total < 13, 'total should be tighter than the old worst-case estimate');
-  assert.ok(start.total >= start.done);
+  assert.equal(start.percent, 0);
 
   let s = createTournament(ids);
   let m;
+  let prevPercent = -1;
   while ((m = nextMatchup(s))) {
     const p = getProgress(s);
-    assert.ok(p.total >= p.done, 'total never dips below decisions made');
+    assert.equal(p.total, start.total, 'denominator never changes');
+    assert.ok(p.percent >= prevPercent, 'progress only moves forward');
     assert.ok(p.percent <= 99, 'bar stays below complete until done');
+    prevPercent = p.percent;
     s = recordWinner(s, choose(m.a, m.b));
   }
 
-  const end = getProgress(s);
-  assert.equal(end.done, end.total, 'no phantom remaining work at the end');
-  assert.equal(end.percent, 100);
+  assert.equal(getProgress(s).percent, 100);
 });
 
-test('progress total is accurate for a large list and hides no work at completion', () => {
+test('progress reaches the fixed total work at completion for a large list', () => {
   const ids = Array.from({ length: 100 }, (_, i) => i);
-  assert.ok(getProgress(createTournament(ids)).total <= 100 * 7 - 100 + 1);
+  const total = getProgress(createTournament(ids)).total;
   let s = createTournament([...ids].reverse());
   let m;
+  let prevPercent = -1;
   while ((m = nextMatchup(s))) {
     const p = getProgress(s);
-    assert.ok(p.done <= p.total);
+    assert.equal(p.total, total, 'denominator never changes');
+    assert.ok(p.percent >= prevPercent, 'progress only moves forward');
+    assert.ok(p.percent <= 99);
+    prevPercent = p.percent;
     s = recordWinner(s, choose(m.a, m.b));
   }
-  const end = getProgress(s);
-  assert.equal(end.percent, 100);
-  assert.equal(end.done, end.total);
+  assert.equal(getProgress(s).percent, 100);
 });
 
 test('shuffleIds returns a permutation without mutating the input', () => {

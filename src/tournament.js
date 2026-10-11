@@ -1,4 +1,4 @@
-function merge(left, right, compare) {
+function merge(left, right, compare, onPlace) {
   const out = [];
   let i = 0;
   let j = 0;
@@ -6,10 +6,29 @@ function merge(left, right, compare) {
     const winner = compare(left[i], right[j]);
     if (winner === left[i]) out.push(left[i++]);
     else out.push(right[j++]);
+    onPlace();
   }
-  while (i < left.length) out.push(left[i++]);
-  while (j < right.length) out.push(right[j++]);
+  while (i < left.length) { out.push(left[i++]); onPlace(); }
+  while (j < right.length) { out.push(right[j++]); onPlace(); }
   return out;
+}
+
+function mergeWork(n) {
+  let sizes = Array(n).fill(1);
+  let work = 0;
+  while (sizes.length > 1) {
+    const next = [];
+    for (let i = 0; i < sizes.length; i += 2) {
+      if (i + 1 < sizes.length) {
+        next.push(sizes[i] + sizes[i + 1]);
+        work += sizes[i] + sizes[i + 1];
+      } else {
+        next.push(sizes[i]);
+      }
+    }
+    sizes = next;
+  }
+  return work;
 }
 
 function replay(state) {
@@ -17,15 +36,19 @@ function replay(state) {
   let wi = 0;
   let round = 1;
   let pending = null;
-  let comparisons = 0;
+  let placed = 0;
+  let placedAtPending = null;
+  const onPlace = () => { placed += 1; };
   const compare = (a, b) => {
-    comparisons += 1;
     if (wi < state.winners.length) {
       const winner = state.winners[wi++];
       if (winner !== a && winner !== b) throw new Error('Corrupt winner history');
       return winner;
     }
-    if (!pending) pending = { a, b, round };
+    if (!pending) {
+      pending = { a, b, round };
+      placedAtPending = placed;
+    }
     return a;
   };
 
@@ -33,7 +56,7 @@ function replay(state) {
   while (runs.length > 1) {
     const next = [];
     for (let i = 0; i < runs.length; i += 2) {
-      next.push(i + 1 < runs.length ? merge(runs[i], runs[i + 1], compare) : runs[i]);
+      next.push(i + 1 < runs.length ? merge(runs[i], runs[i + 1], compare, onPlace) : runs[i]);
     }
     runs = next;
     round += 1;
@@ -44,7 +67,7 @@ function replay(state) {
     ranking: runs[0] || [],
     totalRounds,
     round: Math.min(round, totalRounds),
-    comparisons,
+    placedAtPending,
   };
 }
 
@@ -93,11 +116,12 @@ export function getProgress(state) {
   const r = replay(state);
   const complete = r.pending === null;
   const done = state.winners.length;
-  const total = Math.max(r.comparisons, done, 1);
+  const total = Math.max(mergeWork(state.ids.length), 1);
+  const placed = complete ? total : (r.placedAtPending === null ? 0 : r.placedAtPending);
   return {
     done,
     total,
-    percent: complete || state.ids.length <= 1 ? 100 : Math.min(99, Math.round((done / total) * 100)),
+    percent: complete || state.ids.length <= 1 ? 100 : Math.min(99, Math.round((placed / total) * 100)),
     round: r.pending ? r.pending.round : r.totalRounds,
     totalRounds: r.totalRounds,
     complete,
