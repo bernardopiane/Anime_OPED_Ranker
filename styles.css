@@ -399,6 +399,72 @@ button:disabled {
 }
 #results-list a:hover { color: var(--color-accent-strong); text-decoration: underline; }
 
+#podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  gap: var(--space-md);
+  margin: var(--space-lg) 0 var(--space-md);
+  padding: 0;
+  list-style: none;
+}
+.podium-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  --podium-h: 6rem;
+}
+.podium-slot--1 { grid-area: 1 / 2; --podium-h: 11rem; }
+.podium-slot--2 { grid-area: 1 / 1; --podium-h: 8rem; }
+.podium-slot--3 { grid-area: 1 / 3; --podium-h: 6rem; }
+.podium-crown { width: 2rem; height: 2rem; flex: 0 0 auto; }
+.podium-slot--1 .podium-crown { color: var(--crown-gold); }
+.podium-slot--2 .podium-crown { color: var(--crown-silver); }
+.podium-slot--3 .podium-crown { color: var(--crown-bronze); }
+.podium-figure,
+.podium-show {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  background: var(--color-media);
+}
+.podium-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
+.podium-show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm);
+  text-align: center;
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+}
+.podium-stand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+  width: 100%;
+  min-height: var(--podium-h);
+  padding: var(--space-sm);
+  text-align: center;
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+}
+.podium-slot--1 .podium-stand { border-color: var(--color-accent); }
+.podium-rank {
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+}
+.podium-title { color: var(--color-ink); font-weight: 500; text-decoration: none; }
+.podium-title:hover { color: var(--color-accent-strong); text-decoration: underline; }
+
 .modal {
   position: fixed;
   inset: 0;
@@ -481,6 +547,12 @@ button:disabled {
 
 @media (max-width: 720px) {
   #panels { flex-direction: column; }
+  #podium { gap: var(--space-sm); }
+  .podium-slot--1 { --podium-h: 8rem; }
+  .podium-slot--2 { --podium-h: 6rem; }
+  .podium-slot--3 { --podium-h: 4.5rem; }
+  .podium-crown { width: 1.5rem; height: 1.5rem; }
+  .podium-title { font-size: var(--text-sm); }
   .vs-badge { padding-block: var(--space-2xs); }
   .volume { flex: 1 1 auto; }
   .volume input { width: 100%; }

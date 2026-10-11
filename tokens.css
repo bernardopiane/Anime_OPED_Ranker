@@ -20,6 +20,10 @@
   --color-media: oklch(12% 0.008 45);
   --color-scrim: oklch(10% 0.010 45 / 0.62);
 
+  --crown-gold: oklch(85% 0.13 85);
+  --crown-silver: oklch(85% 0.02 240);
+  --crown-bronze: oklch(68% 0.10 55);
+
   --shadow-modal: 0 16px 40px oklch(5% 0.010 45 / 0.5);
 
   --font-display: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
