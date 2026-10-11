@@ -189,7 +189,7 @@ git commit -m "Add podiumEntries helper"
 
 **Interfaces:**
 - Consumes: `podiumEntries(items)` from Task 2.
-- Produces: DOM — `<ol id="podium" class="podium">` containing `<li class="podium-slot podium-slot--{rank}">` slots, each with a `.podium-crown` SVG, an optional `.podium-figure > img.podium-thumb` (or `.podium-show` text tile on error/absence), and a `.podium-stand` holding `.podium-rank` + `a.podium-title`.
+- Produces: DOM — `<ol id="podium" class="podium">` containing `<li class="podium-slot podium-slot--{rank}">` slots, each with a `.podium-crown` SVG, an optional `.podium-figure > img.podium-thumb` (present only when a thumbnail exists; on image load failure it is replaced by a `.podium-show` text tile), and a `.podium-stand` holding `.podium-rank` + `a.podium-title` (a slot with no thumbnail has no figure — the title in the stand carries the show information).
 
 - [ ] **Step 1: Add the container to `index.html`**
 
