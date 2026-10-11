@@ -12,7 +12,12 @@
         Progress can’t be saved — storage is unavailable or full. Your ranking will still work during this session.
       </p>
       <section id="start-screen" class="screen">
-        <h1>Anime OP/ED Ranker</h1>
+        <div class="hero">
+          <p class="eyebrow">Head-to-head tournament</p>
+          <h1 class="wordmark">Anime <span class="word-oped">OP/ED</span> Ranker</h1>
+          <p class="tagline">Rank every opening and ending, one duel at a time.</p>
+        </div>
+        <div class="start-card">
         <p id="status">Loading…</p>
         <label class="shuffle-toggle">
           <input id="shuffle" type="checkbox" />
@@ -27,6 +32,7 @@
           <button id="resume-btn" class="primary hidden">Resume</button>
           <button id="reset-btn">Reset</button>
         </div>
+        </div>
       </section>
 
       <section id="match-screen" class="screen hidden">
@@ -36,6 +42,7 @@
         </header>
         <div id="panels">
           <div id="panel-a" class="panel" role="button" tabindex="0"></div>
+          <div class="vs-badge" aria-hidden="true"><span>VS</span></div>
           <div id="panel-b" class="panel" role="button" tabindex="0"></div>
         </div>
         <footer class="match-footer">
@@ -51,7 +58,10 @@
       </section>
 
       <section id="results-screen" class="screen hidden">
-        <h1>Your ranking</h1>
+        <div class="hero">
+          <p class="eyebrow">Final standings</p>
+          <h1>Your ranking</h1>
+        </div>
         <ol id="results-list"></ol>
         <div class="actions">
           <button id="copy-btn">Copy</button>
