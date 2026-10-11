@@ -11,5 +11,18 @@
     "palette_mode": "dark (warm near-black paper oklch 20% 0.012 45, single coral accent oklch 68% 0.15 32)",
     "type": "system-ui display+body + ui-monospace outlier (rank numerals, VS mark); no web fonts",
     "notes": "Dark→light rewrite of prior Broadcast Showdown build; removed gradient text/gradients/side-stripes/eyebrows/glow; one accent; preserves test/styles.test.js layout contracts."
+  },
+  {
+    "date": "2026-10-11",
+    "brief": "Redesign the results screen (final ranking display) using Hallmark redesign; tone playful; audience = you + whoever you share the ranking with; use = read/copy/download the finished ranking.",
+    "genre": "modern-minimal + playful tone layer",
+    "theme": "Coral (inherited, not rotated)",
+    "macrostructure": "Index-First",
+    "nav": "n/a (in-app screen; actions row as closer)",
+    "footer": "n/a",
+    "enrichment": "none",
+    "palette_mode": "inherited dark warm near-black paper + single coral accent",
+    "type": "preserved system stack (no web fonts)",
+    "notes": "Screen-scoped redesign: centred h1 + lede, widescreen 2-column index at >=72rem, podium hover-lift, accent-soft champion stand, list-row hover tint; preserves routes/copy intent/brand; slop pass (1-58), contrast pass (40-41), mobile pass (34,50-57)."
   }
 ]
