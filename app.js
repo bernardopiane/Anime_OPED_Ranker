@@ -12,7 +12,7 @@ import {
   hydrateVideoCache,
 } from './src/cache.js';
 import { podiumEntries } from './src/podium.js';
-import { parsePlaylistId, toPlaylistCsv, extractFromHtml, fetchPlaylist } from './src/playlist.js';
+import { parsePlaylistId, toPlaylistCsv, extractFromHtml, fetchPlaylist, assignIds } from './src/playlist.js';
 
 const CSV_URL = 'opening%20list.csv';
 
@@ -181,6 +181,7 @@ async function init() {
   updateResumeButton(saved);
   updateSourceLabel();
 
+  initPlaylistTool();
   el('start-btn').addEventListener('click', () => {
     if (isResumable(load()) && !confirm('Start a new ranking? Your saved progress will be replaced.')) {
       return;
@@ -260,7 +261,6 @@ async function init() {
     persist();
   });
 
-  initPlaylistTool();
   showScreen('start');
 }
 
@@ -1012,8 +1012,9 @@ function initPlaylistTool() {
 
   el('playlist-use-btn').addEventListener('click', () => {
     if (!pendingPlaylistItems) return;
-    useItems(pendingPlaylistItems, 'YouTube playlist');
+    useItems(assignIds(pendingPlaylistItems), 'YouTube playlist');
   });
 }
+
 
 init();

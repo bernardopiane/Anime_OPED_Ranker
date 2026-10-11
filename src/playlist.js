@@ -1,4 +1,4 @@
-﻿const ID_RE = /^[A-Za-z0-9_-]{2,60}$/;
+const ID_RE = /^[A-Za-z0-9_-]{2,60}$/;
 
 export function parsePlaylistId(input) {
   if (typeof input !== 'string') return null;
@@ -17,6 +17,13 @@ export function parsePlaylistId(input) {
 
 export function watchUrl(videoId) {
   return 'https://www.youtube.com/watch?v=' + videoId;
+}
+
+export function assignIds(items) {
+  if (!Array.isArray(items)) return [];
+  return items.map(function(item, index) {
+    return { id: index, title: item.title, url: item.url };
+  });
 }
 
 export function toPlaylistCsv(items) {
@@ -193,7 +200,13 @@ export async function fetchPlaylist(playlistId, apiKey, options = {}) {
       if (res.status === 404) throw codedError('NOT_FOUND');
       throw codedError('HTTP_ERROR');
     }
-    const mapped = mapApiItems(await res.json());
+    let body;
+    try {
+      body = await res.json();
+    } catch {
+      throw codedError('HTTP_ERROR');
+    }
+    const mapped = mapApiItems(body);
     for (const item of mapped.items) {
       if (seen.has(item.url)) continue;
       seen.add(item.url);
