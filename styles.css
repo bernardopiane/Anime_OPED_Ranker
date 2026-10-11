@@ -1,4 +1,4 @@
-/* Hallmark · macrostructure: Marquee Hero · genre: modern-minimal · theme: Coral (dark) · enrichment: none · nav: N9 Edge-aligned · footer: Ft2 Inline-rule · pre-emit critique P5 H4 E5 S4 R5 V5 · contrast: pass (40-41) · nav/footer/slop: pass (42-45) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49) · mobile: pass (34,50-57) */
+/* Hallmark · macrostructure: Marquee Hero (Start) · Split Studio (Duel) · Index-First (Results) · genre: playful · theme: Sakura (custom dual light/dark, accent hue 352) · enrichment: none · nav: N2 Floating chip · footer: Ft5 Statement · pre-emit critique P5 H5 E5 S4 R5 V5 · contrast: pass (40-41) · nav/footer/slop: pass (42-45) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49) · mobile: pass (34,49-57) · gate 1 note: system font stack (offline constraint, no web fonts) */
 
 *,
 *::before,
@@ -29,6 +29,29 @@ body {
 
 .hidden { display: none !important; }
 
+.theme-toggle {
+  position: fixed;
+  top: max(var(--space-md), env(safe-area-inset-top));
+  right: max(var(--space-md), env(safe-area-inset-right));
+  z-index: var(--z-sticky);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  color: var(--color-ink);
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-card);
+}
+.theme-icon { width: 20px; height: 20px; }
+.theme-icon--sun { display: none; }
+:root[data-theme="dark"] .theme-icon--sun { display: block; }
+:root[data-theme="dark"] .theme-icon--moon { display: none; }
+
 h1,
 h2 {
   margin: 0;
@@ -44,6 +67,19 @@ h2 {
 
 @keyframes screen-in {
   from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+#start-screen .start-card > * {
+  animation: rise-in var(--dur-short) var(--ease-out) both;
+}
+#start-screen .start-card > *:nth-child(1) { animation-delay: 60ms; }
+#start-screen .start-card > *:nth-child(2) { animation-delay: 110ms; }
+#start-screen .start-card > *:nth-child(3) { animation-delay: 160ms; }
+#start-screen .start-card > *:nth-child(4) { animation-delay: 210ms; }
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
 }
 
@@ -63,14 +99,15 @@ button {
   color: var(--color-ink);
   background: var(--color-paper);
   border: 1px solid var(--color-rule-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   transition: background-color var(--dur-micro) var(--ease-out),
     border-color var(--dur-micro) var(--ease-out),
     transform 100ms var(--ease-out);
 }
 button:active { transform: translateY(1px); }
 button.primary {
-  color: var(--color-accent-strong);
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
   border-color: var(--color-accent);
 }
 button:disabled {
@@ -110,6 +147,15 @@ button:disabled {
   color: var(--color-muted);
 }
 
+.site-footer {
+  margin-block-start: var(--space-xl);
+  padding-block-start: var(--space-md);
+  border-block-start: 1px solid var(--color-rule);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+.site-footer p { margin: 0; max-width: 46ch; }
+
 .start-card {
   display: flex;
   flex-direction: column;
@@ -118,7 +164,8 @@ button:disabled {
   padding: var(--space-lg);
   background: var(--color-paper-2);
   border: 1px solid var(--color-rule);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
 }
 
 #status { margin: 0; color: var(--color-muted); font-size: var(--text-sm); }
@@ -191,7 +238,7 @@ button:disabled {
   cursor: pointer;
   background: var(--color-paper-2);
   border: 1px solid var(--color-rule);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   transition: background-color var(--dur-micro) var(--ease-out),
     border-color var(--dur-micro) var(--ease-out);
 }
@@ -352,8 +399,8 @@ button:disabled {
   border-radius: var(--radius-sm);
 }
 
-/* Hallmark redesign · screen: results · macrostructure: Index-First · genre: modern-minimal · tone: playful · theme: Coral (inherited) · enrichment: none
- * pre-emit critique: P5 H4 E5 S4 R5 V5 · slop: pass (1-58) · contrast: pass (40-41) */
+/* Hallmark redesign · screen: results · macrostructure: Index-First · genre: playful · tone: playful · theme: Sakura (inherited dual light/dark) · enrichment: none
+ * pre-emit critique: P5 H5 E5 S4 R5 V5 · slop: pass (1-58) · contrast: pass (40-41) */
 /* gate 1 note: display face is the preserved offline system stack (preflight constraint, no web fonts) */
 #results-screen {
   max-width: 72rem;
@@ -456,7 +503,7 @@ button:disabled {
   justify-content: center;
   padding: var(--space-sm);
   text-align: center;
-  color: var(--color-ink-soft);
+  color: var(--color-media-ink);
   font-size: var(--text-sm);
 }
 .podium-stand {
@@ -556,13 +603,17 @@ button:disabled {
 
 @media (hover: hover) {
   button:hover { background: var(--color-paper-3); }
-  button.primary:hover { background: var(--color-accent-soft); }
+  button.primary:hover {
+    background: var(--color-accent-strong);
+    border-color: var(--color-accent-strong);
+  }
   .panel:hover {
     background: var(--color-paper-3);
     border-color: var(--color-rule-strong);
   }
   .podium-slot:hover { transform: translateY(-2px); }
   #results-list li:hover { background: var(--color-paper-2); }
+  .theme-toggle:hover { background: var(--color-paper-3); border-color: var(--color-rule-strong); }
 }
 
 @media (min-width: 72rem) {
@@ -589,7 +640,8 @@ button:disabled {
 
 @media (prefers-reduced-motion: reduce) {
   .screen,
-  .modal-card { animation: none; }
+  .modal-card,
+  #start-screen .start-card > * { animation: none; }
   .panel .loading::before { animation: none; }
   button {
     transition: background-color var(--dur-micro) var(--ease-out),
@@ -598,6 +650,9 @@ button:disabled {
   .modal-card { transform: none; }
   .progress .bar > div { transition: none; }
   .podium-slot,
+  .panel,
   #results-list li { transition: none; }
-  .podium-slot:hover { transform: none; }
+  .podium-slot:hover,
+  .panel:hover { transform: none; }
+  button:active { transform: none; }
 }

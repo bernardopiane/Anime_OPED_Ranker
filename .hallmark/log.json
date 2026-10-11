@@ -24,5 +24,19 @@
     "palette_mode": "inherited dark warm near-black paper + single coral accent",
     "type": "preserved system stack (no web fonts)",
     "notes": "Screen-scoped redesign: centred h1 + lede, widescreen 2-column index at >=72rem, podium hover-lift, accent-soft champion stand, list-row hover tint; preserves routes/copy intent/brand; slop pass (1-58), contrast pass (40-41), mobile pass (34,50-57)."
+  },
+  {
+    "date": "2026-10-11",
+    "brief": "Whole-app playful redesign via Hallmark redesign; tone playful (soft & warm); keep dark OR add a light/dark toggle (user chose toggle) and pick a brand accent based on the app type. Audience: anime fans ranking OP/EDs.",
+    "genre": "playful (soft & warm)",
+    "theme": "Sakura (custom dual light/dark, tuned OKLCH — catalog avoided because playful's Hum needs web fonts)",
+    "macrostructure": "Marquee Hero (Start) / Split Studio (Duel) / Index-First (Results)",
+    "nav": "N2 Floating chip (theme picker)",
+    "footer": "Ft5 Statement",
+    "enrichment": "none",
+    "palette_mode": "dual — light paper oklch(97% 0.012 352) / dark paper oklch(17% 0.012 352); muted rose accent hue 352 (light oklch(47% 0.16 352), dark oklch(74% 0.13 352))",
+    "type": "preserved system stack (display + body + mono outlier); no web fonts",
+    "variation_knobs": "theme Coral -> Sakura; nav N9 -> N2; footer Ft2 -> Ft5; mood modern-minimal -> playful",
+    "notes": "Whole-app pass. Added no-FOUC theme script (data-theme on <html>), N2 theme chip with aria-pressed/live aria-label, Ft5 statement footer, pill CTAs with filled primary, radius-lg cards/panels, start-card + podium staggered reveal, and reduced-motion fallbacks. Added design.md as system of record and refreshed preflight.json. Preserves routes/IDs/copy intent/layout contracts. Contrast pass (40-41), nav/footer/slop pass (42-45), honest (46), chrome (47), tokens (48), responsive (49), mobile (34,49-57). Gate 1 = documented offline exception (system font stack)."
   }
 ]

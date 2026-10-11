@@ -30,6 +30,26 @@ function showScreen(name) {
   }
 }
 
+function initTheme() {
+  const toggle = el('theme-toggle');
+  if (!toggle) return;
+  const root = document.documentElement;
+  const sync = () => {
+    const isDark = root.dataset.theme !== 'light';
+    toggle.setAttribute('aria-pressed', String(isDark));
+    toggle.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+  };
+  sync();
+  toggle.addEventListener('click', () => {
+    const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+    root.dataset.theme = next;
+    try {
+      localStorage.setItem('oped-theme', next);
+    } catch {}
+    sync();
+  });
+}
+
 function persist() {
   const record = {
     fingerprint: sourceFingerprint(state.items),
@@ -788,4 +808,5 @@ el('again-btn').addEventListener('click', () => {
   showScreen('start');
 });
 
+initTheme();
 init();
