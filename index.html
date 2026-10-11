@@ -64,6 +64,46 @@
             <button id="reset-btn">Reset</button>
           </div>
         </div>
+        <details id="playlist-tool" class="playlist-tool">
+          <summary>Turn a YouTube playlist into a CSV</summary>
+          <div class="playlist-body">
+            <label class="playlist-field">
+              <span>Playlist link</span>
+              <input id="playlist-url" type="url" placeholder="https://www.youtube.com/playlist?list=…" />
+            </label>
+
+            <div class="playlist-route">
+              <p class="playlist-route-title">Fetch with a YouTube API key</p>
+              <label class="playlist-field">
+                <span>API key (optional)</span>
+                <input id="playlist-key" type="password" autocomplete="off" placeholder="AIza…" />
+              </label>
+              <label class="shuffle-toggle">
+                <input id="playlist-remember" type="checkbox" />
+                <span>Remember key on this device</span>
+              </label>
+              <button id="playlist-api-btn" type="button">Fetch videos</button>
+            </div>
+
+            <div class="playlist-route">
+              <p class="playlist-route-title">No key? Use the saved page</p>
+              <p class="playlist-help">Open the playlist, save the page (Ctrl+S) or copy its source, then paste or upload it here.</p>
+              <textarea id="playlist-html" aria-label="Playlist page source" placeholder="Paste the playlist page source here…"></textarea>
+              <label class="load-csv">
+                <span>Upload the saved page</span>
+                <input id="playlist-file" type="file" accept=".html,.htm,.txt,text/html" />
+              </label>
+              <button id="playlist-html-btn" type="button">Extract videos</button>
+            </div>
+
+            <p id="playlist-status" class="playlist-status" role="status" aria-live="polite"></p>
+
+            <div class="actions">
+              <button id="playlist-download-btn" type="button" disabled>Download CSV</button>
+              <button id="playlist-use-btn" class="primary" type="button" disabled>Use this list</button>
+            </div>
+          </div>
+        </details>
         <p class="meta">Local only — your ranking never leaves this browser.</p>
         <footer class="site-footer">
           <p>Built for the eternal rewatch — rank the bangers, settle the debates.</p>
