@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePlaylistId, watchUrl, toPlaylistCsv, extractFromHtml } from '../src/playlist.js';
+import { parsePlaylistId, watchUrl, toPlaylistCsv, extractFromHtml, mapApiItems, fetchPlaylist } from '../src/playlist.js';
 import { parseCsv } from '../src/csv.js';
 
 test('parsePlaylistId reads the list param from a playlist URL', () => {
@@ -120,8 +120,6 @@ test('extractFromHtml returns an empty array when there are no videos', () => {
   assert.deepEqual(extractFromHtml(undefined), []);
 });
 
-import { mapApiItems, fetchPlaylist } from '../src/playlist.js';
-
 test('mapApiItems builds links and skips unavailable entries', () => {
   const page = {
     nextPageToken: 'p2',
@@ -172,6 +170,11 @@ test('fetchPlaylist maps HTTP error statuses to codes', async () => {
   await assert.rejects(fetchPlaylist('PL', 'K', { fetchImpl: withStatus(400) }), (e) => e.code === 'BAD_KEY');
   await assert.rejects(fetchPlaylist('PL', 'K', { fetchImpl: withStatus(403) }), (e) => e.code === 'FORBIDDEN');
   await assert.rejects(fetchPlaylist('PL', 'K', { fetchImpl: withStatus(404) }), (e) => e.code === 'NOT_FOUND');
+  await assert.rejects(fetchPlaylist('PL', 'K', { fetchImpl: withStatus(500) }), (e) => e.code === 'HTTP_ERROR');
+});
+
+test('fetchPlaylist rejects a blank playlist id', async () => {
+  await assert.rejects(fetchPlaylist('', 'SOMEKEY'), (e) => e.code === 'INVALID_PLAYLIST');
 });
 
 test('fetchPlaylist flags a missing key and network failures', async () => {
