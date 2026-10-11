@@ -25,6 +25,7 @@
   --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --dur-micro: 120ms;
   --dur-short: 220ms;
   --dur-screen: 250ms;
@@ -44,69 +45,96 @@
   --z-toast: 500;
 }
 
-/* Hallmark theme · Sakura (custom dual light/dark) · playful · accent hue 352 */
+/* Hallmark theme · Versus (custom dual light/dark) · duotone duel · base hue 285 */
+/* Team A stays warm, Team B stays cool, in both axes, so a side always reads the same. */
 
 /* dark (default; also used when no theme is set) */
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --color-paper: oklch(17% 0.012 352);
-  --color-paper-2: oklch(21% 0.014 352);
-  --color-paper-3: oklch(25% 0.016 352);
-  --color-rule: oklch(33% 0.014 352);
-  --color-rule-strong: oklch(52% 0.016 352);
-  --color-neutral: oklch(64% 0.012 352);
-  --color-muted: oklch(73% 0.013 352);
-  --color-ink-soft: oklch(84% 0.010 352);
-  --color-ink: oklch(95% 0.008 352);
-  --color-accent: oklch(74% 0.13 352);
-  --color-accent-strong: oklch(80% 0.11 352);
-  --color-accent-soft: oklch(30% 0.06 352);
-  --color-accent-ink: oklch(18% 0.04 352);
-  --color-focus: oklch(78% 0.14 352);
-  --color-danger: oklch(70% 0.15 27);
-  --color-danger-soft: oklch(28% 0.06 27);
-  --color-media: oklch(12% 0.008 352);
-  --color-media-ink: oklch(90% 0.010 352);
-  --color-scrim: oklch(10% 0.010 352 / 0.62);
+  --color-paper: oklch(15% 0.020 285);
+  --color-paper-2: oklch(19% 0.024 285);
+  --color-paper-3: oklch(24% 0.028 285);
+  --color-rule: oklch(31% 0.030 285);
+  --color-rule-strong: oklch(48% 0.032 285);
+  --color-neutral: oklch(60% 0.018 285);
+  --color-muted: oklch(72% 0.016 285);
+  --color-ink-soft: oklch(85% 0.012 285);
+  --color-ink: oklch(96% 0.008 285);
 
-  --crown-gold: oklch(85% 0.13 85);
-  --crown-silver: oklch(85% 0.02 240);
-  --crown-bronze: oklch(68% 0.10 55);
+  --color-accent: oklch(70% 0.185 34);
+  --color-accent-strong: oklch(76% 0.160 40);
+  --color-accent-soft: oklch(28% 0.080 34);
+  --color-accent-ink: oklch(17% 0.040 34);
+  --color-focus: oklch(80% 0.160 40);
 
-  --shadow-modal: 0 16px 40px oklch(5% 0.010 352 / 0.5);
-  --shadow-card: 0 6px 18px oklch(6% 0.012 352 / 0.45);
+  --color-team-a: oklch(70% 0.185 34);
+  --color-team-a-strong: oklch(78% 0.150 40);
+  --color-team-a-soft: oklch(28% 0.080 34);
+  --color-team-a-ink: oklch(17% 0.040 34);
+
+  --color-team-b: oklch(74% 0.125 200);
+  --color-team-b-strong: oklch(82% 0.110 200);
+  --color-team-b-soft: oklch(28% 0.060 210);
+  --color-team-b-ink: oklch(16% 0.030 210);
+
+  --color-danger: oklch(70% 0.170 25);
+  --color-danger-soft: oklch(28% 0.070 25);
+  --color-media: oklch(11% 0.012 285);
+  --color-media-ink: oklch(92% 0.008 285);
+  --color-scrim: oklch(9% 0.020 285 / 0.70);
+
+  --crown-gold: oklch(86% 0.130 85);
+  --crown-silver: oklch(86% 0.015 250);
+  --crown-bronze: oklch(70% 0.100 55);
+
+  --shadow-modal: 0 20px 50px oklch(4% 0.02 285 / 0.55);
+  --shadow-card: 0 8px 22px oklch(5% 0.02 285 / 0.45);
+  --shadow-lift: 0 14px 34px oklch(5% 0.02 285 / 0.55);
 }
 
 /* light */
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --color-paper: oklch(97% 0.012 352);
-  --color-paper-2: oklch(94% 0.016 352);
-  --color-paper-3: oklch(91% 0.020 352);
-  --color-rule: oklch(86% 0.020 352);
-  --color-rule-strong: oklch(70% 0.030 352);
-  --color-neutral: oklch(46% 0.020 352);
-  --color-muted: oklch(44% 0.020 352);
-  --color-ink-soft: oklch(36% 0.020 352);
-  --color-ink: oklch(24% 0.022 352);
-  --color-accent: oklch(47% 0.16 352);
-  --color-accent-strong: oklch(43% 0.17 352);
-  --color-accent-soft: oklch(92% 0.040 352);
-  --color-accent-ink: oklch(99% 0.010 352);
-  --color-focus: oklch(52% 0.18 352);
-  --color-danger: oklch(55% 0.19 27);
-  --color-danger-soft: oklch(94% 0.040 27);
-  --color-media: oklch(22% 0.010 352);
-  --color-media-ink: oklch(90% 0.010 352);
-  --color-scrim: oklch(35% 0.020 352 / 0.45);
+  --color-paper: oklch(97% 0.010 285);
+  --color-paper-2: oklch(94% 0.014 285);
+  --color-paper-3: oklch(90% 0.018 285);
+  --color-rule: oklch(85% 0.016 285);
+  --color-rule-strong: oklch(68% 0.030 285);
+  --color-neutral: oklch(50% 0.020 285);
+  --color-muted: oklch(44% 0.020 285);
+  --color-ink-soft: oklch(35% 0.024 285);
+  --color-ink: oklch(23% 0.026 285);
 
-  --crown-gold: oklch(72% 0.14 85);
-  --crown-silver: oklch(70% 0.02 240);
-  --crown-bronze: oklch(58% 0.10 55);
+  --color-accent: oklch(46% 0.185 34);
+  --color-accent-strong: oklch(41% 0.180 34);
+  --color-accent-soft: oklch(93% 0.045 40);
+  --color-accent-ink: oklch(99% 0.010 40);
+  --color-focus: oklch(50% 0.200 34);
 
-  --shadow-modal: 0 16px 40px oklch(45% 0.03 352 / 0.22);
-  --shadow-card: 0 6px 18px oklch(45% 0.03 352 / 0.16);
+  --color-team-a: oklch(46% 0.185 34);
+  --color-team-a-strong: oklch(41% 0.180 34);
+  --color-team-a-soft: oklch(93% 0.045 40);
+  --color-team-a-ink: oklch(99% 0.010 40);
+
+  --color-team-b: oklch(46% 0.120 220);
+  --color-team-b-strong: oklch(40% 0.125 220);
+  --color-team-b-soft: oklch(92% 0.040 215);
+  --color-team-b-ink: oklch(99% 0.010 215);
+
+  --color-danger: oklch(50% 0.200 25);
+  --color-danger-soft: oklch(94% 0.040 25);
+  --color-media: oklch(20% 0.020 285);
+  --color-media-ink: oklch(92% 0.008 285);
+  --color-scrim: oklch(30% 0.030 285 / 0.52);
+
+  --crown-gold: oklch(70% 0.140 85);
+  --crown-silver: oklch(64% 0.020 250);
+  --crown-bronze: oklch(56% 0.100 55);
+
+  --shadow-modal: 0 20px 50px oklch(40% 0.04 285 / 0.28);
+  --shadow-card: 0 8px 22px oklch(40% 0.04 285 / 0.18);
+  --shadow-lift: 0 14px 34px oklch(40% 0.04 285 / 0.24);
 }

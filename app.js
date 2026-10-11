@@ -437,26 +437,65 @@ function youtubeAdapter(scrub) {
   return adapter;
 }
 
-function renderPanel(side, item) {
+function panelSignature(item) {
+  const info = resolved.get(item.id);
+  const kind = !info ? 'loading' : info.videoUrl ? 'video' : info.youtubeId ? 'yt' : 'fallback';
+  const ref = info ? info.videoUrl || info.youtubeId || item.url : '';
+  return `${item.id}|${kind}|${ref}`;
+}
+
+function failToFallback(side, item, adapter) {
+  if (media[side].adapter !== adapter) return;
+  if (activeSide === side) activeSide = null;
+  cleanupMedia(side);
+  resolved.set(item.id, { videoUrl: null, pageUrl: item.url });
   const panel = el(`panel-${side}`);
+  if (panel.dataset.id === String(item.id)) {
+    panel.dataset.sig = '';
+    renderPanel(side, item);
+  }
+  applyAudio();
+}
+
+function renderPanel(side, item, animate = false) {
+  const panel = el(`panel-${side}`);
+  const sig = panelSignature(item);
+  if (panel.dataset.sig === sig) {
+    applyAudio();
+    return;
+  }
   cleanupMedia(side);
   panel.dataset.id = String(item.id);
+  panel.dataset.sig = sig;
+  panel.setAttribute('aria-label', item.title);
+
   const info = resolved.get(item.id);
   panel.innerHTML = '';
 
+  const head = document.createElement('div');
+  head.className = 'panel-head';
   const title = document.createElement('div');
   title.className = 'title';
   title.textContent = item.title;
-  panel.appendChild(title);
+  const cap = document.createElement('span');
+  cap.className = 'keycap';
+  cap.setAttribute('aria-hidden', 'true');
+  cap.textContent = side === 'a' ? '← A' : 'B →';
+  head.append(title, cap);
+  panel.appendChild(head);
 
   const controls = document.createElement('div');
   controls.className = 'controls';
 
-  const showFallback = () => {
-    panel.innerHTML = '';
-    panel.appendChild(title);
-    panel.appendChild(fallback(item, side));
-  };
+  const pickBtn = document.createElement('button');
+  pickBtn.type = 'button';
+  pickBtn.className = 'pick-btn';
+  pickBtn.textContent = side === 'a' ? 'Pick A' : 'Pick B';
+  pickBtn.setAttribute('aria-label', `Pick ${item.title}`);
+  pickBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    pick(side);
+  });
 
   if (info && info.videoUrl) {
     const video = document.createElement('video');
@@ -488,17 +527,12 @@ function renderPanel(side, item) {
     const adapter = nativeAdapter(video);
     const playBtn = actionButton('Play/Pause', () => adapter.togglePlay());
     const unmuteBtn = actionButton('Unmute', () => toggleUnmute(side));
+    unmuteBtn.classList.add('unmute');
     controls.append(playBtn, unmuteBtn);
     panel.appendChild(controls);
     media[side] = { adapter, button: unmuteBtn };
 
-    video.addEventListener('error', () => {
-      if (media[side].adapter !== adapter) return;
-      cleanupMedia(side);
-      if (activeSide === side) activeSide = null;
-      showFallback();
-      applyAudio();
-    });
+    video.addEventListener('error', () => failToFallback(side, item, adapter));
   } else if (info && info.youtubeId) {
     const holder = document.createElement('div');
     holder.className = 'yt';
@@ -512,17 +546,12 @@ function renderPanel(side, item) {
     const adapter = youtubeAdapter(scrub);
     const playBtn = actionButton('Play/Pause', () => adapter.togglePlay());
     const unmuteBtn = actionButton('Unmute', () => toggleUnmute(side));
+    unmuteBtn.classList.add('unmute');
     controls.append(playBtn, unmuteBtn);
     panel.appendChild(controls);
     media[side] = { adapter, button: unmuteBtn };
 
-    const failed = () => {
-      if (media[side].adapter !== adapter) return;
-      cleanupMedia(side);
-      if (activeSide === side) activeSide = null;
-      showFallback();
-      applyAudio();
-    };
+    const failed = () => failToFallback(side, item, adapter);
 
     loadYouTubeApi()
       .then((YT) => {
@@ -555,20 +584,28 @@ function renderPanel(side, item) {
       .catch(failed);
   } else if (info) {
     panel.appendChild(fallback(item, side));
-    panel.appendChild(controls);
     media[side] = { adapter: null, button: null };
   } else {
     panel.appendChild(loadingBox());
     media[side] = { adapter: null, button: null };
   }
 
+  panel.appendChild(pickBtn);
   applyAudio();
 
   if (!info) {
     const id = item.id;
     ensureResolved(item).then(() => {
-      if (resolved.has(id) && panel.dataset.id === String(id)) renderPanel(side, item);
+      if (resolved.has(id) && panel.dataset.id === String(id) && el(`panel-${side}`) === panel) {
+        renderPanel(side, item);
+      }
     });
+  }
+
+  if (animate) {
+    panel.classList.remove('panel--enter');
+    void panel.offsetWidth;
+    panel.classList.add('panel--enter');
   }
 }
 
@@ -615,6 +652,19 @@ function pick(side) {
   else renderMatch();
 }
 
+function renderLadder(total, current) {
+  const ladder = el('round-ladder');
+  if (!ladder) return;
+  ladder.innerHTML = '';
+  for (let r = 1; r <= total; r += 1) {
+    const seg = document.createElement('span');
+    seg.className = 'rung';
+    if (r < current) seg.classList.add('is-done');
+    else if (r === current) seg.classList.add('is-now');
+    ladder.appendChild(seg);
+  }
+}
+
 function renderMatch() {
   if (isComplete(state.tournament)) {
     renderResults();
@@ -625,11 +675,20 @@ function renderMatch() {
   const matchup = nextMatchup(state.tournament);
   const a = itemById(matchup.a);
   const b = itemById(matchup.b);
-  renderPanel('a', a);
-  renderPanel('b', b);
+
+  const prevA = el('panel-a').dataset.id;
+  const prevB = el('panel-b').dataset.id;
+  renderPanel('a', a, prevA !== undefined && prevA !== String(a.id));
+  renderPanel('b', b, prevB !== undefined && prevB !== String(b.id));
 
   const progress = getProgress(state.tournament);
   el('progress-label').textContent = `Round ${progress.round} of ${progress.totalRounds}`;
+  renderLadder(progress.totalRounds, progress.round);
+
+  const status = el('match-status');
+  if (status) {
+    status.textContent = `Round ${progress.round} of ${progress.totalRounds}. ${a.title} versus ${b.title}.`;
+  }
 }
 
 el('panel-a').addEventListener('click', () => pick('a'));
@@ -641,8 +700,24 @@ el('panel-b').addEventListener('mouseenter', () => setActive('b'));
 el('panel-b').addEventListener('mouseleave', () => setActive(lockedSide));
 
 document.addEventListener('keydown', (e) => {
-  if (!el('preview-modal').classList.contains('hidden')) {
-    if (e.key === 'Escape') closePreview();
+  const modal = el('preview-modal');
+  if (!modal.classList.contains('hidden')) {
+    if (e.key === 'Escape') {
+      closePreview();
+    } else if (e.key === 'Tab') {
+      const focusables = modal.querySelectorAll('a[href], button:not([disabled])');
+      if (focusables.length) {
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
     return;
   }
   if (el('match-screen').classList.contains('hidden')) return;
@@ -652,8 +727,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft' && !e.shiftKey) pick('a');
   else if (e.key === 'ArrowRight' && !e.shiftKey) pick('b');
   else if (e.key.toLowerCase() === 'u') {
-    const panel = el('panel-a');
-    panel.querySelector('.controls button:last-child')?.click();
+    el('panel-a').querySelector('.unmute')?.click();
   }
 });
 
@@ -672,6 +746,7 @@ function toText(items) {
 }
 
 let previewCloseTimer = null;
+let previewReturnFocus = null;
 
 function openPreview() {
   const items = getCurrentRanking(state.tournament).map(itemById);
@@ -688,10 +763,12 @@ function openPreview() {
     list.appendChild(li);
   }
   const modal = el('preview-modal');
+  previewReturnFocus = document.activeElement;
   clearTimeout(previewCloseTimer);
   modal.classList.remove('hidden');
   void modal.offsetHeight;
   modal.classList.add('is-open');
+  el('preview-close').focus();
 }
 
 function closePreview() {
@@ -699,6 +776,10 @@ function closePreview() {
   modal.classList.remove('is-open');
   clearTimeout(previewCloseTimer);
   previewCloseTimer = setTimeout(() => modal.classList.add('hidden'), 200);
+  if (previewReturnFocus && typeof previewReturnFocus.focus === 'function') {
+    previewReturnFocus.focus();
+  }
+  previewReturnFocus = null;
 }
 
 el('preview-btn').addEventListener('click', openPreview);

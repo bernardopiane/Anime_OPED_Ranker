@@ -43,7 +43,9 @@
       <p id="warning" class="warning hidden">
         Progress can’t be saved — storage is unavailable or full. Your ranking will still work during this session.
       </p>
+
       <section id="start-screen" class="screen">
+        <p class="kicker">OP / ED Tournament</p>
         <h1 class="wordmark">Anime OP/ED Ranker</h1>
         <p class="lede">Rank every opening and ending, one duel at a time.</p>
         <div class="start-card">
@@ -69,27 +71,38 @@
       </section>
 
       <section id="match-screen" class="screen hidden">
-        <header class="progress">
-          <span id="progress-label"></span>
+        <header class="hud">
+          <div class="hud-main">
+            <p class="hud-kicker">Duel</p>
+            <p id="progress-label" class="hud-round"></p>
+            <div id="round-ladder" class="ladder" aria-hidden="true"></div>
+          </div>
+          <span id="match-status" class="sr-only" role="status" aria-live="polite"></span>
         </header>
         <div id="panels">
-          <div id="panel-a" class="panel" role="button" tabindex="0"></div>
+          <div id="panel-a" class="panel panel--a" role="group"></div>
           <div class="vs-badge" aria-hidden="true"><span>VS</span></div>
-          <div id="panel-b" class="panel" role="button" tabindex="0"></div>
+          <div id="panel-b" class="panel panel--b" role="group"></div>
         </div>
         <footer class="match-footer">
-          <button id="undo-btn">Undo</button>
-          <button id="preview-btn">Preview ranking</button>
-          <button id="pause-btn">Pause &amp; exit</button>
+          <div class="match-actions">
+            <button id="undo-btn">Undo</button>
+            <button id="preview-btn">Preview ranking</button>
+            <button id="pause-btn">Pause &amp; exit</button>
+          </div>
           <label class="volume">
             <span>Volume</span>
             <input id="volume" type="range" min="0" max="1" step="0.01" value="1" />
           </label>
-          <span class="hint">Click a panel or press ← / → to pick · hover to hear · U to unmute</span>
+          <p class="hint">
+            <span class="hint-touch">Tap a panel or press ← / → to pick.</span>
+            <span class="hint-hover">Click a panel or press ← / → to pick · hover a side to hear it · U to mute.</span>
+          </p>
         </footer>
       </section>
 
       <section id="results-screen" class="screen hidden">
+        <p class="kicker">Final standings</p>
         <h1>Your ranking</h1>
         <p class="results-lede">Everything you ranked, best first.</p>
         <ol id="podium" class="podium" aria-label="Top three"></ol>
@@ -101,10 +114,10 @@
         </div>
       </section>
     </main>
-    <div id="preview-modal" class="modal hidden">
+    <div id="preview-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="preview-title">
       <div class="modal-card">
         <div class="modal-head">
-          <h2>Current ranking</h2>
+          <h2 id="preview-title">Current ranking</h2>
           <button id="preview-close" type="button">Close</button>
         </div>
         <p class="modal-note">Provisional — updates as you keep picking.</p>
