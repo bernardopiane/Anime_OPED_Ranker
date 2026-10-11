@@ -102,15 +102,25 @@
       </section>
 
       <section id="results-screen" class="screen hidden">
-        <p class="kicker">Final standings</p>
-        <h1>Your ranking</h1>
-        <p class="results-lede">Everything you ranked, best first.</p>
-        <ol id="podium" class="podium" aria-label="Top three"></ol>
-        <ol id="results-list"></ol>
+        <header class="finale-head">
+          <p class="kicker">Final standings</p>
+          <h1>Your ranking</h1>
+          <p class="results-lede">Everything you ranked, best first.</p>
+        </header>
+
+        <div class="stage">
+          <ol id="podium" class="podium" aria-label="Top three"></ol>
+        </div>
+
+        <div class="board">
+          <h2 class="board-title">Full ranking</h2>
+          <ol id="results-list"></ol>
+        </div>
+
         <div class="actions">
           <button id="copy-btn">Copy</button>
           <button id="download-btn">Download CSV</button>
-          <button id="again-btn">Play again</button>
+          <button id="again-btn" class="primary">Play again</button>
         </div>
       </section>
     </main>

@@ -87,7 +87,14 @@
 
   --crown-gold: oklch(86% 0.130 85);
   --crown-silver: oklch(86% 0.015 250);
-  --crown-bronze: oklch(70% 0.100 55);
+  --crown-bronze: oklch(72% 0.100 55);
+
+  --color-champion: oklch(83% 0.140 84);
+  --color-champion-strong: oklch(89% 0.115 88);
+  --color-champion-soft: oklch(30% 0.060 82);
+  --color-champion-ink: oklch(25% 0.060 82);
+  --color-champion-text: oklch(86% 0.120 85);
+  --color-stage: oklch(11% 0.020 300);
 
   --shadow-modal: 0 20px 50px oklch(4% 0.02 285 / 0.55);
   --shadow-card: 0 8px 22px oklch(5% 0.02 285 / 0.45);
@@ -130,9 +137,16 @@
   --color-media-ink: oklch(92% 0.008 285);
   --color-scrim: oklch(30% 0.030 285 / 0.52);
 
-  --crown-gold: oklch(70% 0.140 85);
-  --crown-silver: oklch(64% 0.020 250);
-  --crown-bronze: oklch(56% 0.100 55);
+  --crown-gold: oklch(70% 0.130 80);
+  --crown-silver: oklch(50% 0.015 250);
+  --crown-bronze: oklch(52% 0.095 55);
+
+  --color-champion: oklch(78% 0.130 84);
+  --color-champion-strong: oklch(72% 0.150 84);
+  --color-champion-soft: oklch(94% 0.045 84);
+  --color-champion-ink: oklch(28% 0.070 82);
+  --color-champion-text: oklch(44% 0.130 78);
+  --color-stage: oklch(94% 0.035 85);
 
   --shadow-modal: 0 20px 50px oklch(40% 0.04 285 / 0.28);
   --shadow-card: 0 8px 22px oklch(40% 0.04 285 / 0.18);

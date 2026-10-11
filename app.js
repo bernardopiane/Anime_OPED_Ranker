@@ -791,6 +791,8 @@ el('preview-modal').addEventListener('click', (e) => {
 const CROWN_SVG =
   '<svg class="podium-crown" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 7l5 4 4-6 4 6 5-4-1.5 11h-15L3 7z"/></svg>';
 
+const PLACE_LABELS = { 1: 'Champion', 2: 'Runner-up', 3: 'Third place' };
+
 function podiumShowTile(title) {
   const span = document.createElement('span');
   span.className = 'podium-show';
@@ -821,6 +823,9 @@ function renderPodium(items) {
 
     const stand = document.createElement('div');
     stand.className = 'podium-stand';
+    const place = document.createElement('span');
+    place.className = 'podium-place';
+    place.textContent = PLACE_LABELS[rank] || String(rank);
     const rankEl = document.createElement('span');
     rankEl.className = 'podium-rank';
     rankEl.textContent = String(rank);
@@ -830,7 +835,7 @@ function renderPodium(items) {
     title.target = '_blank';
     title.rel = 'noopener';
     title.textContent = item.title;
-    stand.append(rankEl, title);
+    stand.append(place, rankEl, title);
     li.appendChild(stand);
 
     podium.appendChild(li);

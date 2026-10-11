@@ -56,10 +56,17 @@ Axes: **light → dark (dual, user-toggleable)** · **system-native type** ·
 | `--color-focus` | `oklch(80% 0.160 40)` | `oklch(50% 0.200 34)` |
 | `--color-media` | `oklch(11% 0.012 285)` | `oklch(20% 0.020 285)` |
 | `--color-media-ink` | `oklch(92% 0.008 285)` | `oklch(92% 0.008 285)` |
+| `--color-champion` | `oklch(83% 0.140 84)` | `oklch(78% 0.130 84)` |
+| `--color-stage` | `oklch(11% 0.020 300)` | `oklch(94% 0.035 85)` |
 
 Team A is an alias of `--color-accent`; Team B has its own `--team-b*` family. Panels
 remap `--team*` per side, so one rule styles both. Semantic tokens (`--danger*`,
 `--crown-*`, `--shadow-*`) follow the same axis.
+
+The **champion family** (`--color-champion`, `-strong`, `-soft`, `-ink`, `-text`, plus
+`--color-stage`) is the gold used only by the Results screen. It is a fill
+(`--color-champion` + `--color-champion-ink` text) and a text tone
+(`--color-champion-text`, ≥ 4.5:1 on paper); never gold body text on gold fill.
 
 Contrast targets: body ink ≥ 4.5:1 on paper, accent/team as text ≥ 4.5:1 on paper,
 and team-ink ≥ 4.5:1 on its team fill (light accents are held at L ≤ 46% so white
@@ -91,8 +98,29 @@ added later; it is not required.
   action, a statement footer.
 - **Duel — Split Arena:** a diptych of two duotone panels with a split-ring `VS`
   medallion, a round ladder in the HUD, and a per-side **Pick** call to action.
-- **Results — Podium Poster:** a kicker'd heading, a crowning podium, and an
-  index-first ranked list.
+- **Results — Awards Stage:** a kicker'd heading over a spotlighted gold stage; the
+  three-step podium stands on it (2nd left / 1st centre / 3rd right), then the
+  index-first **Full ranking** board. This is the one screen that leaves the duel's
+  warm/cool duotone for a gold "reveal" world — see below.
+
+### Results — the reveal world
+
+The payoff diverges from the duel on purpose. It is its own contained world:
+
+- **Stage:** a `--color-stage` panel lit by two stacked `--color-champion` spotlights
+  (a wide cone plus a tight core) with a bottom floor-glow, a masked dot field, a
+  `--color-rule-strong` border, and a champion-tinted inset top edge.
+- **Podium:** unchanged behaviour (top three, crowns, thumbnails). Each slot remaps
+  `--medal` / `--medal-text` — `--crown-gold` (champion), `--crown-silver`,
+  `--crown-bronze`. The 1st slot's crown and figure are larger, its figure carries a
+  gold ring + glow, and its stand wears a `--color-champion` top rail. Stands are
+  step blocks whose rank numeral uses `--color-champion-text` for the champion.
+  Place labels: **Champion / Runner-up / Third place**.
+- **Board:** an `h2` `Full ranking` rule, then rows with pill rank chips. Row 1 gets a
+  `--color-champion` tint and a filled gold chip; ranks 2–3 take silver/bronze chip
+  borders.
+- **Actions:** centred; **Play again** is the gold `--color-champion` primary, Copy and
+  Download CSV stay outlined chips.
 
 ## Navigation & footer
 
@@ -110,7 +138,8 @@ added later; it is not required.
 
 ## Motion
 
-- One reveal per screen (`.screen` entrance) plus a light stagger on the Start card.
+- One reveal per screen (`.screen` entrance) plus a light stagger on the Start card
+  and a rise-in stagger for the three podium slots.
 - **Incoming side:** when a pick replaces one panel, the changed panel slides in from
   its outer edge (`panel-enter-a` / `panel-enter-b`, `backwards` fill so hover-lift
   still works afterwards). The unchanged side is never re-rendered, so its video
@@ -127,7 +156,8 @@ added later; it is not required.
   panel's foot — the explicit "this one" affordance.
 - Panels lift and warm on hover; both the panel and its Pick button use the team
   colour.
-- Results rows tint on hover; the champion's stand uses `--accent-soft`.
+- Results rows tint on hover; the champion's figure, stand rail, rank chip, and row
+  all carry the gold `--color-champion` treatment.
 - Theme chip swaps sun/moon icon per active theme.
 
 ## Keyboard & assistive tech
@@ -141,9 +171,10 @@ added later; it is not required.
 
 ## CTA voice
 
-- **Primary** (Start / Resume): filled accent pill, `--color-accent-ink` text.
+- **Primary** (Start / Resume): filled accent pill, `--color-accent-ink` text. On the
+  Results screen, **Play again** is the filled gold `--color-champion` primary.
 - **Pick A / Pick B:** filled team pill, full width, at the panel foot.
-- **Secondary** (Reset, Copy, Download, Play again, Undo, Preview, Pause): outlined chip.
+- **Secondary** (Reset, Copy, Download, Undo, Preview, Pause): outlined chip.
 
 ## Copy
 
