@@ -607,7 +607,7 @@ function renderMatch() {
   renderPanel('b', b);
 
   const progress = getProgress(state.tournament);
-  el('progress-bar').style.width = `${progress.percent}%`;
+  el('progress-bar').style.transform = `scaleX(${progress.percent / 100})`;
   el('progress-label').textContent =
     `Round ${progress.round}/${progress.totalRounds} · ${progress.done}/${progress.total}`;
 }
@@ -651,6 +651,8 @@ function toText(items) {
   return items.map((item, i) => `${i + 1}. ${item.title}`).join('\n');
 }
 
+let previewCloseTimer = null;
+
 function openPreview() {
   const items = getCurrentRanking(state.tournament).map(itemById);
   const list = el('preview-list');
@@ -665,11 +667,17 @@ function openPreview() {
     li.appendChild(link);
     list.appendChild(li);
   }
-  el('preview-modal').classList.remove('hidden');
+  const modal = el('preview-modal');
+  clearTimeout(previewCloseTimer);
+  modal.classList.remove('hidden');
+  requestAnimationFrame(() => modal.classList.add('is-open'));
 }
 
 function closePreview() {
-  el('preview-modal').classList.add('hidden');
+  const modal = el('preview-modal');
+  modal.classList.remove('is-open');
+  clearTimeout(previewCloseTimer);
+  previewCloseTimer = setTimeout(() => modal.classList.add('hidden'), 200);
 }
 
 el('preview-btn').addEventListener('click', openPreview);

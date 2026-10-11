@@ -46,11 +46,9 @@
   --text-display: clamp(2.6rem, 6vw + 1rem, 5.25rem);
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --dur-micro: 120ms;
   --dur-short: 220ms;
-  --dur-long: 420ms;
+  --dur-screen: 250ms;
 
   --radius-sm: 8px;
   --radius-md: 12px;
