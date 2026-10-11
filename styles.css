@@ -60,8 +60,8 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
   min-width: 0;
 }
 .panel video { width: 100%; flex: 1 1 auto; min-height: 0; object-fit: contain; background: #000; border-radius: 6px; }
-.panel .yt { width: 100%; flex: 1 1 auto; min-height: 0; background: #000; border-radius: 6px; overflow: hidden; }
-.panel iframe { display: block; width: 100%; height: 100%; border: 0; }
+.panel .yt { display: flex; width: 100%; flex: 1 1 auto; min-height: 0; background: #000; border-radius: 6px; overflow: hidden; }
+.panel iframe { display: block; width: 100%; flex: 1 1 auto; min-height: 0; border: 0; }
 .panel .scrub { width: 100%; flex: 0 0 auto; accent-color: var(--accent); }
 .panel .title { flex: 0 0 auto; font-weight: 600; }
 .panel .controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; flex: 0 0 auto; }
