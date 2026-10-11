@@ -111,7 +111,8 @@ function openPreview() {
   const modal = el('preview-modal');
   clearTimeout(previewCloseTimer);
   modal.classList.remove('hidden');
-  requestAnimationFrame(() => modal.classList.add('is-open'));
+  void modal.offsetHeight;
+  modal.classList.add('is-open');
 }
 
 function closePreview() {
@@ -123,6 +124,14 @@ function closePreview() {
 ```
 
 The `200` in `setTimeout` must match the `200ms` transition duration above.
+
+> **Why a forced reflow, not `requestAnimationFrame`:** `is-open` must be added
+> synchronously. Waiting a frame means that if that frame never runs (headless
+> rendering, a background/occluded tab, or a suspended frame clock) the class is
+> never applied and the modal stays at `opacity: 0` — invisible. Reading
+> `modal.offsetHeight` flushes the element’s displayed state at `opacity: 0`, so
+> adding `is-open` immediately after still starts the transition, with no
+> dependency on the frame callback firing.
 
 Then, inside the existing `@media (prefers-reduced-motion: reduce)` block
 (created/rewritten by plan 001), add a movement reset for the modal so it only

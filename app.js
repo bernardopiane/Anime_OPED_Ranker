@@ -670,7 +670,8 @@ function openPreview() {
   const modal = el('preview-modal');
   clearTimeout(previewCloseTimer);
   modal.classList.remove('hidden');
-  requestAnimationFrame(() => modal.classList.add('is-open'));
+  void modal.offsetHeight;
+  modal.classList.add('is-open');
 }
 
 function closePreview() {
