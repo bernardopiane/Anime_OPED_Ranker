@@ -114,15 +114,21 @@ function extractByRegex(html) {
   const idRe = /"videoId":"([A-Za-z0-9_-]{11})"/g;
   let match;
   while ((match = idRe.exec(html))) {
-    if (!seen.has(match[1])) { seen.add(match[1]); ids.push(match[1]); }
+    if (!seen.has(match[1])) { seen.add(match[1]); ids.push({ id: match[1], index: match.index }); }
   }
   if (ids.length === 0) return [];
   const titles = [];
   const titleRe = /"title":\{(?:"runs":\[\{"text":"((?:[^"\\]|\\.)*)"|"simpleText":"((?:[^"\\]|\\.)*)")/g;
   while ((match = titleRe.exec(html))) {
-    titles.push(decodeJsonString(match[1] != null ? match[1] : match[2]));
+    const text = decodeJsonString(match[1] != null ? match[1] : match[2]).trim();
+    titles.push({ text, index: match.index });
   }
-  return ids.map((id, i) => ({ title: titles[i] || id, url: watchUrl(id) }));
+  return ids.map((entry, i) => {
+    const end = i + 1 < ids.length ? ids[i + 1].index : Infinity;
+    const found = titles.find((t) => t.index >= entry.index && t.index < end);
+    const title = found && found.text ? found.text : entry.id;
+    return { title, url: watchUrl(entry.id) };
+  });
 }
 
 export function extractFromHtml(html) {

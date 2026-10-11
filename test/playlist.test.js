@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePlaylistId, watchUrl, toPlaylistCsv } from '../src/playlist.js';
+import { parsePlaylistId, watchUrl, toPlaylistCsv, extractFromHtml } from '../src/playlist.js';
 import { parseCsv } from '../src/csv.js';
 
 test('parsePlaylistId reads the list param from a playlist URL', () => {
@@ -57,7 +57,20 @@ test('a comma in a title survives a round-trip through parseCsv', () => {
   assert.deepEqual(parseCsv(csv), [{ id: 0, title: 'Naruto, Opening 1', url }]);
 });
 
-import { extractFromHtml } from '../src/playlist.js';
+test('extractFromHtml regex fallback pairs titles within each video id range', () => {
+  const html =
+    '"title":{"simpleText":"Before All"} ' +
+    '"videoId":"aaaaaaaaaaa" ' +
+    '"title":{"simpleText":"  A Title  "} ' +
+    '"videoId":"bbbbbbbbbbb" ' +
+    '"videoId":"ccccccccccc" ' +
+    '"title":{"simpleText":"C Title"}';
+  assert.deepEqual(extractFromHtml(html), [
+    { title: 'A Title', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+    { title: 'bbbbbbbbbbb', url: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' },
+    { title: 'C Title', url: 'https://www.youtube.com/watch?v=ccccccccccc' },
+  ]);
+});
 
 test('extractFromHtml reads playlistVideoRenderer nodes in order', () => {
   const html =
