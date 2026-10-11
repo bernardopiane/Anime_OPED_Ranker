@@ -17,7 +17,9 @@ function replay(state) {
   let wi = 0;
   let round = 1;
   let pending = null;
+  let comparisons = 0;
   const compare = (a, b) => {
+    comparisons += 1;
     if (wi < state.winners.length) {
       const winner = state.winners[wi++];
       if (winner !== a && winner !== b) throw new Error('Corrupt winner history');
@@ -37,13 +39,13 @@ function replay(state) {
     round += 1;
   }
 
-  return { pending, ranking: runs[0] || [], totalRounds, round: Math.min(round, totalRounds) };
-}
-
-function estimateTotal(ids) {
-  const n = ids.length;
-  if (n <= 1) return 1;
-  return n * Math.ceil(Math.log2(n)) - n + 1;
+  return {
+    pending,
+    ranking: runs[0] || [],
+    totalRounds,
+    round: Math.min(round, totalRounds),
+    comparisons,
+  };
 }
 
 export function createTournament(ids) {
@@ -90,8 +92,8 @@ export function getCurrentRanking(state) {
 export function getProgress(state) {
   const r = replay(state);
   const complete = r.pending === null;
-  const total = Math.max(1, estimateTotal(state.ids));
   const done = state.winners.length;
+  const total = Math.max(r.comparisons, done, 1);
   return {
     done,
     total,

@@ -104,16 +104,40 @@ test('progress never reaches 100 percent before completion', () => {
   }
 });
 
-test('progress total is an upper bound matching the spec estimate', () => {
+test('progress total tracks the live replay count, not a worst-case estimate', () => {
+  const ids = Array.from({ length: 6 }, (_, i) => i + 1);
+  const start = getProgress(createTournament(ids));
+  assert.equal(start.done, 0);
+  assert.ok(start.total < 13, 'total should be tighter than the old worst-case estimate');
+  assert.ok(start.total >= start.done);
+
+  let s = createTournament(ids);
+  let m;
+  while ((m = nextMatchup(s))) {
+    const p = getProgress(s);
+    assert.ok(p.total >= p.done, 'total never dips below decisions made');
+    assert.ok(p.percent <= 99, 'bar stays below complete until done');
+    s = recordWinner(s, choose(m.a, m.b));
+  }
+
+  const end = getProgress(s);
+  assert.equal(end.done, end.total, 'no phantom remaining work at the end');
+  assert.equal(end.percent, 100);
+});
+
+test('progress total is accurate for a large list and hides no work at completion', () => {
   const ids = Array.from({ length: 100 }, (_, i) => i);
-  assert.equal(getProgress(createTournament(ids)).total, 100 * 7 - 100 + 1);
+  assert.ok(getProgress(createTournament(ids)).total <= 100 * 7 - 100 + 1);
   let s = createTournament([...ids].reverse());
   let m;
   while ((m = nextMatchup(s))) {
-    assert.ok(getProgress(s).done <= getProgress(s).total);
+    const p = getProgress(s);
+    assert.ok(p.done <= p.total);
     s = recordWinner(s, choose(m.a, m.b));
   }
-  assert.equal(getProgress(s).percent, 100);
+  const end = getProgress(s);
+  assert.equal(end.percent, 100);
+  assert.equal(end.done, end.total);
 });
 
 test('shuffleIds returns a permutation without mutating the input', () => {
