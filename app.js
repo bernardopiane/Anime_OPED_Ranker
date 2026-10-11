@@ -12,6 +12,7 @@ import {
   hydrateVideoCache,
 } from './src/cache.js';
 import { podiumEntries } from './src/podium.js';
+import { parsePlaylistId, toPlaylistCsv, extractFromHtml, fetchPlaylist } from './src/playlist.js';
 
 const CSV_URL = 'opening%20list.csv';
 
@@ -259,6 +260,7 @@ async function init() {
     persist();
   });
 
+  initPlaylistTool();
   showScreen('start');
 }
 
@@ -894,4 +896,124 @@ el('again-btn').addEventListener('click', () => {
 });
 
 initTheme();
+
+const KEY_STORAGE = 'oped-yt-key';
+let pendingPlaylistItems = null;
+
+function playlistStatus(message, isError) {
+  const node = el('playlist-status');
+  node.textContent = message;
+  node.classList.toggle('is-error', Boolean(isError));
+}
+
+function showExtracted(result) {
+  const items = result.items || [];
+  pendingPlaylistItems = items.length ? items : null;
+  const has = Boolean(pendingPlaylistItems);
+  el('playlist-download-btn').disabled = !has;
+  el('playlist-use-btn').disabled = !has;
+  if (!has) {
+    playlistStatus('No videos found.', true);
+    return;
+  }
+  const noun = items.length === 1 ? 'video' : 'videos';
+  const base = `Found ${items.length} ${noun}`;
+  playlistStatus(result.skipped ? `${base}, skipped ${result.skipped} unavailable.` : `${base}.`);
+}
+
+function playlistErrorMessage(err) {
+  switch (err && err.code) {
+    case 'MISSING_KEY': return 'Enter your YouTube API key, or use the saved page.';
+    case 'BAD_KEY': return 'The API key was rejected.';
+    case 'FORBIDDEN': return "Quota exceeded, or the YouTube Data API isn't enabled for that key.";
+    case 'NOT_FOUND': return "That playlist wasn't found.";
+    case 'NETWORK': return "Couldn't reach YouTube. Check your connection, or use the saved page.";
+    default: return 'Something went wrong. Try again, or use the saved page.';
+  }
+}
+
+async function runPlaylistApiRoute() {
+  const id = parsePlaylistId(el('playlist-url').value);
+  if (!id) {
+    playlistStatus("That doesn't look like a playlist link.", true);
+    return;
+  }
+  const key = el('playlist-key').value.trim();
+  if (!key) {
+    playlistStatus('Enter your YouTube API key, or use the saved page.', true);
+    return;
+  }
+  playlistStatus('Fetching…');
+  try {
+    const result = await fetchPlaylist(id, key);
+    try {
+      if (el('playlist-remember').checked) localStorage.setItem(KEY_STORAGE, key);
+      else localStorage.removeItem(KEY_STORAGE);
+    } catch {}
+    showExtracted(result);
+  } catch (err) {
+    playlistStatus(playlistErrorMessage(err), true);
+  }
+}
+
+function runPlaylistHtmlRoute(html) {
+  if (typeof html !== 'string' || html.trim() === '') {
+    playlistStatus('Paste or upload the saved playlist page first.', true);
+    return;
+  }
+  const items = extractFromHtml(html);
+  if (items.length === 0) {
+    playlistStatus("Couldn't find videos in that page — save the playlist page, not the home page.", true);
+    return;
+  }
+  showExtracted({ items, skipped: 0 });
+}
+
+function initPlaylistTool() {
+  if (!el('playlist-tool')) return;
+  try {
+    const savedKey = localStorage.getItem(KEY_STORAGE);
+    if (savedKey) {
+      el('playlist-key').value = savedKey;
+      el('playlist-remember').checked = true;
+    }
+  } catch {}
+
+  el('playlist-api-btn').addEventListener('click', runPlaylistApiRoute);
+
+  el('playlist-html-btn').addEventListener('click', () => {
+    runPlaylistHtmlRoute(el('playlist-html').value);
+  });
+
+  el('playlist-file').addEventListener('change', async (event) => {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    let text;
+    try {
+      text = await file.text();
+    } catch {
+      playlistStatus('Could not read that file.', true);
+      return;
+    }
+    runPlaylistHtmlRoute(text);
+  });
+
+  el('playlist-download-btn').addEventListener('click', () => {
+    if (!pendingPlaylistItems) return;
+    const blob = new Blob([toPlaylistCsv(pendingPlaylistItems)], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'yt-playlist.csv';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  });
+
+  el('playlist-use-btn').addEventListener('click', () => {
+    if (!pendingPlaylistItems) return;
+    useItems(pendingPlaylistItems, 'YouTube playlist');
+  });
+}
+
 init();
