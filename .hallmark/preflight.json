@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-11",
+  "framework": "vanilla HTML + ES modules (index.html, app.js, src/*.js); no build step",
+  "font_stack": "system-ui stack (styles.css :root --font) + ui-monospace (--mono); no web fonts, no network font dependency",
+  "palette": "hex custom properties in styles.css :root — dark paper (#07070b), cyan #2fe0e6 + magenta #ff3d86 accents, medal gold/silver/bronze",
+  "motion": "motion-cut — no framer-motion / gsap / motion / lenis; CSS transitions only",
+  "spacing": "ad-hoc rem values; no formal 4pt scale",
+  "preserve": ["dark palette", "no-network-font constraint", "test-asserted CSS layout contracts (test/styles.test.js)"],
+  "introduce": ["OKLCH token system", "macrostructure", "microinteraction discipline", "slop-test gates"],
+  "notes": "Existing app has test-enforced CSS contracts (67 tests, node --test). No design.md / tokens.css / prior .hallmark log."
+}
