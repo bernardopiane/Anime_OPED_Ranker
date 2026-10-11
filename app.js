@@ -11,6 +11,7 @@ import {
   videoCacheEntries,
   hydrateVideoCache,
 } from './src/cache.js';
+import { podiumEntries } from './src/podium.js';
 
 const CSV_URL = 'opening%20list.csv';
 
@@ -687,12 +688,62 @@ el('preview-modal').addEventListener('click', (e) => {
   if (e.target === el('preview-modal')) closePreview();
 });
 
+const CROWN_SVG =
+  '<svg class="podium-crown" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 7l5 4 4-6 4 6 5-4-1.5 11h-15L3 7z"/></svg>';
+
+function podiumShowTile(title) {
+  const span = document.createElement('span');
+  span.className = 'podium-show';
+  span.textContent = title;
+  return span;
+}
+
+function renderPodium(items) {
+  const podium = el('podium');
+  podium.innerHTML = '';
+  for (const { rank, item, thumbnail } of podiumEntries(items)) {
+    const li = document.createElement('li');
+    li.className = `podium-slot podium-slot--${rank}`;
+    li.insertAdjacentHTML('beforeend', CROWN_SVG);
+
+    if (thumbnail) {
+      const figure = document.createElement('div');
+      figure.className = 'podium-figure';
+      const img = document.createElement('img');
+      img.className = 'podium-thumb';
+      img.src = thumbnail;
+      img.alt = '';
+      img.loading = 'lazy';
+      img.addEventListener('error', () => figure.replaceWith(podiumShowTile(item.title)));
+      figure.appendChild(img);
+      li.appendChild(figure);
+    }
+
+    const stand = document.createElement('div');
+    stand.className = 'podium-stand';
+    const rankEl = document.createElement('span');
+    rankEl.className = 'podium-rank';
+    rankEl.textContent = String(rank);
+    const title = document.createElement('a');
+    title.className = 'podium-title';
+    title.href = item.url;
+    title.target = '_blank';
+    title.rel = 'noopener';
+    title.textContent = item.title;
+    stand.append(rankEl, title);
+    li.appendChild(stand);
+
+    podium.appendChild(li);
+  }
+}
+
 function renderResults() {
   cleanupMedia('a');
   cleanupMedia('b');
   activeSide = null;
   lockedSide = null;
   const items = rankedItems();
+  renderPodium(items);
   const list = el('results-list');
   list.innerHTML = '';
   for (const item of items) {
