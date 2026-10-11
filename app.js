@@ -117,7 +117,8 @@ function isResumable(saved) {
 function updateResumeButton(savedRecord = load()) {
   const resumeBtn = el('resume-btn');
   if (isResumable(savedRecord)) {
-    resumeBtn.textContent = `Resume — ${getProgress(state.tournament).percent}%`;
+    const { round, totalRounds } = getProgress(state.tournament);
+    resumeBtn.textContent = `Resume — Round ${round} of ${totalRounds}`;
     resumeBtn.classList.remove('hidden');
   } else {
     resumeBtn.textContent = 'Resume';
@@ -628,9 +629,7 @@ function renderMatch() {
   renderPanel('b', b);
 
   const progress = getProgress(state.tournament);
-  el('progress-bar').style.transform = `scaleX(${progress.percent / 100})`;
-  el('progress-label').textContent =
-    `Round ${progress.round} of ${progress.totalRounds} · ${progress.percent}%`;
+  el('progress-label').textContent = `Round ${progress.round} of ${progress.totalRounds}`;
 }
 
 el('panel-a').addEventListener('click', () => pick('a'));
