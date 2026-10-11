@@ -140,3 +140,68 @@ export function extractFromHtml(html) {
   if (out.length > 0) return out;
   return extractByRegex(html);
 }
+
+const API_BASE = 'https://www.googleapis.com/youtube/v3/playlistItems';
+const UNAVAILABLE_TITLES = new Set(['Deleted video', 'Private video']);
+
+function codedError(code) {
+  const err = new Error(code);
+  err.code = code;
+  return err;
+}
+
+export function mapApiItems(page) {
+  const items = [];
+  const seen = new Set();
+  let skipped = 0;
+  const list = (page && page.items) || [];
+  for (const entry of list) {
+    const snippet = (entry && entry.snippet) || {};
+    const details = (entry && entry.contentDetails) || {};
+    const videoId = details.videoId || (snippet.resourceId && snippet.resourceId.videoId);
+    const title = typeof snippet.title === 'string' ? snippet.title : '';
+    if (!videoId || UNAVAILABLE_TITLES.has(title)) { skipped += 1; continue; }
+    if (seen.has(videoId)) continue;
+    seen.add(videoId);
+    items.push({ title: title || videoId, url: watchUrl(videoId) });
+  }
+  return { items, nextPageToken: (page && page.nextPageToken) || null, skipped };
+}
+
+export async function fetchPlaylist(playlistId, apiKey, options = {}) {
+  const fetchImpl = options.fetchImpl || fetch;
+  if (!playlistId) throw codedError('INVALID_PLAYLIST');
+  if (!apiKey) throw codedError('MISSING_KEY');
+  const items = [];
+  const seen = new Set();
+  let skipped = 0;
+  let pageToken = '';
+  for (let page = 0; page < 100; page += 1) {
+    const url =
+      `${API_BASE}?part=snippet%2CcontentDetails&maxResults=50` +
+      `&playlistId=${encodeURIComponent(playlistId)}&key=${encodeURIComponent(apiKey)}` +
+      (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : '');
+    let res;
+    try {
+      res = await fetchImpl(url);
+    } catch {
+      throw codedError('NETWORK');
+    }
+    if (!res.ok) {
+      if (res.status === 400) throw codedError('BAD_KEY');
+      if (res.status === 403) throw codedError('FORBIDDEN');
+      if (res.status === 404) throw codedError('NOT_FOUND');
+      throw codedError('HTTP_ERROR');
+    }
+    const mapped = mapApiItems(await res.json());
+    for (const item of mapped.items) {
+      if (seen.has(item.url)) continue;
+      seen.add(item.url);
+      items.push(item);
+    }
+    skipped += mapped.skipped;
+    pageToken = mapped.nextPageToken;
+    if (!pageToken) break;
+  }
+  return { items, skipped };
+}

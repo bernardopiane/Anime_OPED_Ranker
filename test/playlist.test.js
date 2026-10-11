@@ -119,3 +119,63 @@ test('extractFromHtml returns an empty array when there are no videos', () => {
   assert.deepEqual(extractFromHtml(''), []);
   assert.deepEqual(extractFromHtml(undefined), []);
 });
+
+import { mapApiItems, fetchPlaylist } from '../src/playlist.js';
+
+test('mapApiItems builds links and skips unavailable entries', () => {
+  const page = {
+    nextPageToken: 'p2',
+    items: [
+      { snippet: { title: 'A' }, contentDetails: { videoId: 'aaaaaaaaaaa' } },
+      { snippet: { title: 'Deleted video' }, contentDetails: {} },
+      { snippet: { title: 'B', resourceId: { videoId: 'bbbbbbbbbbb' } }, contentDetails: {} },
+    ],
+  };
+  assert.deepEqual(mapApiItems(page), {
+    items: [
+      { title: 'A', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+      { title: 'B', url: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' },
+    ],
+    nextPageToken: 'p2',
+    skipped: 1,
+  });
+});
+
+test('fetchPlaylist paginates, aggregates, and counts skips', async () => {
+  const pages = {
+    first: {
+      nextPageToken: 'p2',
+      items: [
+        { snippet: { title: 'A' }, contentDetails: { videoId: 'aaaaaaaaaaa' } },
+        { snippet: { title: 'Private video' }, contentDetails: {} },
+      ],
+    },
+    p2: {
+      items: [{ snippet: { title: 'C' }, contentDetails: { videoId: 'ccccccccccc' } }],
+    },
+  };
+  const fetchImpl = async (url) => {
+    const token = new URL(url).searchParams.get('pageToken');
+    const body = token ? pages[token] : pages.first;
+    return { ok: true, status: 200, json: async () => body };
+  };
+  const result = await fetchPlaylist('PLtest', 'KEY', { fetchImpl });
+  assert.deepEqual(result.items, [
+    { title: 'A', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+    { title: 'C', url: 'https://www.youtube.com/watch?v=ccccccccccc' },
+  ]);
+  assert.equal(result.skipped, 1);
+});
+
+test('fetchPlaylist maps HTTP error statuses to codes', async () => {
+  const withStatus = (status) => async () => ({ ok: false, status, json: async () => ({}) });
+  await assert.rejects(fetchPlaylist('PL', 'K', { fetchImpl: withStatus(400) }), (e) => e.code === 'BAD_KEY');
+  await assert.rejects(fetchPlaylist('PL', 'K', { fetchImpl: withStatus(403) }), (e) => e.code === 'FORBIDDEN');
+  await assert.rejects(fetchPlaylist('PL', 'K', { fetchImpl: withStatus(404) }), (e) => e.code === 'NOT_FOUND');
+});
+
+test('fetchPlaylist flags a missing key and network failures', async () => {
+  await assert.rejects(fetchPlaylist('PL', '', {}), (e) => e.code === 'MISSING_KEY');
+  const boom = async () => { throw new Error('down'); };
+  await assert.rejects(fetchPlaylist('PL', 'K', { fetchImpl: boom }), (e) => e.code === 'NETWORK');
+});
