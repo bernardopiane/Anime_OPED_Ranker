@@ -56,3 +56,53 @@ test('a comma in a title survives a round-trip through parseCsv', () => {
   const csv = toPlaylistCsv([{ title: 'Naruto, Opening 1', url }]);
   assert.deepEqual(parseCsv(csv), [{ id: 0, title: 'Naruto, Opening 1', url }]);
 });
+
+import { extractFromHtml } from '../src/playlist.js';
+
+test('extractFromHtml reads playlistVideoRenderer nodes in order', () => {
+  const html =
+    '<script>var ytInitialData = {"contents":{"items":[' +
+    '{"playlistVideoRenderer":{"videoId":"aaaaaaaaaaa","title":{"runs":[{"text":"First OP"}]}}},' +
+    '{"playlistVideoRenderer":{"videoId":"bbbbbbbbbbb","title":{"runs":[{"text":"Second OP, Remix"}]}}}' +
+    ']}};</script>';
+  assert.deepEqual(extractFromHtml(html), [
+    { title: 'First OP', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+    { title: 'Second OP, Remix', url: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' },
+  ]);
+});
+
+test('extractFromHtml reads newer lockupViewModel nodes', () => {
+  const html =
+    '<script>window["ytInitialData"] = {"a":{"b":[' +
+    '{"lockupViewModel":{"contentId":"ccccccccccc","contentType":"LOCKUP_CONTENT_TYPE_VIDEO",' +
+    '"metadata":{"lockupMetadataViewModel":{"title":{"content":"Third OP"}}}}}' +
+    ']}};</script>';
+  assert.deepEqual(extractFromHtml(html), [
+    { title: 'Third OP', url: 'https://www.youtube.com/watch?v=ccccccccccc' },
+  ]);
+});
+
+test('extractFromHtml de-duplicates repeated video ids', () => {
+  const html =
+    '<script>var ytInitialData = {"items":[' +
+    '{"playlistVideoRenderer":{"videoId":"aaaaaaaaaaa","title":{"simpleText":"Once"}}},' +
+    '{"playlistVideoRenderer":{"videoId":"aaaaaaaaaaa","title":{"simpleText":"Once"}}}' +
+    ']};</script>';
+  assert.deepEqual(extractFromHtml(html), [
+    { title: 'Once', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+  ]);
+});
+
+test('extractFromHtml falls back to raw video ids when ytInitialData is absent', () => {
+  const html = 'x "videoId":"ddddddddddd" y "videoId":"eeeeeeeeeee"';
+  assert.deepEqual(extractFromHtml(html), [
+    { title: 'ddddddddddd', url: 'https://www.youtube.com/watch?v=ddddddddddd' },
+    { title: 'eeeeeeeeeee', url: 'https://www.youtube.com/watch?v=eeeeeeeeeee' },
+  ]);
+});
+
+test('extractFromHtml returns an empty array when there are no videos', () => {
+  assert.deepEqual(extractFromHtml('<html><body>nothing</body></html>'), []);
+  assert.deepEqual(extractFromHtml(''), []);
+  assert.deepEqual(extractFromHtml(undefined), []);
+});
