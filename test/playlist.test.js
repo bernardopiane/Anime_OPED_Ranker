@@ -1,9 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { runInNewContext } from 'node:vm';
 import {
   parsePlaylistId,
   normalizePlaylistUrl,
   normalizePlaylistItems,
+  createPlaylistBookmarklet,
   watchUrl,
   toPlaylistCsv,
   extractFromHtml,
@@ -63,6 +65,47 @@ test('normalizePlaylistItems validates and de-duplicates extracted videos', () =
     { title: 'Bad ID', url: 'https://www.youtube.com/watch?v=short' },
   ]), [
     { title: 'First OP', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+  ]);
+});
+
+test('bookmarklet sends only indexed videos from the active playlist', () => {
+  const playlistId = 'PLtarget123';
+  const links = [
+    ['aaaaaaaaaaa', playlistId, '1'],
+    ['bbbbbbbbbbb', 'PLother123', '2'],
+    ['ccccccccccc', playlistId, null],
+    ['ddddddddddd', playlistId, '3'],
+  ].map(([videoId, listId, index]) => {
+    const url = new URL(`https://www.youtube.com/watch?v=${videoId}`);
+    if (listId) url.searchParams.set('list', listId);
+    if (index) url.searchParams.set('index', index);
+    return {
+      href: url.href,
+      getAttribute(name) {
+        return name === 'title' ? `Video ${videoId}` : null;
+      },
+      closest() { return null; },
+      textContent: '',
+    };
+  });
+  const host = { querySelectorAll: () => links };
+  let message;
+  runInNewContext(
+    createPlaylistBookmarklet('https://ranker.example/', 'https://ranker.example')
+      .slice('javascript:'.length),
+    {
+      URL,
+      location: { href: `https://www.youtube.com/playlist?list=${playlistId}` },
+      document: { querySelectorAll: () => [host] },
+      window: {
+        opener: { closed: false, postMessage: (payload) => { message = payload; } },
+      },
+      alert() {},
+    },
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(message.videos)), [
+    { title: 'Video aaaaaaaaaaa', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+    { title: 'Video ddddddddddd', url: 'https://www.youtube.com/watch?v=ddddddddddd' },
   ]);
 });
 

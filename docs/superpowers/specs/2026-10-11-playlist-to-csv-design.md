@@ -15,8 +15,10 @@ in a **YouTube playlist** and want a one-step way to turn it into a rankable lis
 
 The browser cannot read YouTube's page DOM from the ranker because of the same-origin
 policy. The tool now opens a validated YouTube playlist in a separate tab and uses a
-user-saved bookmarklet, run on that tab, to extract the currently rendered videos from
-`.ytItemSectionRendererHost`. The bookmarklet sends the records back with `postMessage`;
+user-saved bookmarklet, run on that tab, to extract currently rendered videos from
+`.ytItemSectionRendererHost` whose links carry the active playlist ID and a positive
+playlist index. This avoids including suggested or otherwise unrelated videos from the
+same page. The bookmarklet sends the records back with `postMessage`;
 if YouTube has severed the opener, it opens a ranker tab with the extracted data in its
 URL fragment instead. The ranker validates incoming records before making them available
 to download or use directly.

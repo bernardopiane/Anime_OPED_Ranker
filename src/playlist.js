@@ -67,6 +67,11 @@ export function normalizePlaylistItems(items) {
   return normalized;
 }
 
+export function createPlaylistBookmarklet(appUrl, appOrigin) {
+  const source = `(()=>{const appUrl=${JSON.stringify(appUrl)},appOrigin=${JSON.stringify(appOrigin)},playlistId=new URL(location.href).searchParams.get('list'),videos=new Map(),bad=/^(watch later|share|save|add to queue|shorts|play all|shuffle)$/i;function titleOf(a){let t=(a.getAttribute('title')||a.getAttribute('aria-label')||'').trim();if(!t){const box=a.closest('yt-lockup-view-model,ytd-rich-item-renderer,ytd-rich-grid-media,ytd-playlist-video-renderer');if(box){const h=box.querySelector('h3,h3 span,.yt-lockup-metadata-view-model-wiz__title,[role="heading"]');if(h)t=(h.getAttribute('title')||h.textContent||'').trim()}}if(!t)t=(a.textContent||'').trim();return t||null}for(const host of document.querySelectorAll('.ytItemSectionRendererHost'))for(const a of host.querySelectorAll('a[href*="/watch?v="]')){let link;try{link=new URL(a.href,location.href)}catch{continue}const id=link.searchParams.get('v');if(!playlistId||link.searchParams.get('list')!==playlistId||Number(link.searchParams.get('index'))<1||!id||! /^[\\w-]{11}$/.test(id)||videos.has(id))continue;const title=titleOf(a);if(!title||bad.test(title))continue;videos.set(id,{title,url:'https://www.youtube.com/watch?v='+id})}const rows=Array.from(videos.values());if(!rows.length){alert('No playlist videos found. Make sure the playlist has loaded, then try again.');return}if(window.opener&&!window.opener.closed){window.opener.postMessage({type:'anime-op-ed-ranker-playlist',videos:rows},appOrigin);alert('Sent '+rows.length+' videos to Anime OP/ED Ranker.');return}const target=window.open(appUrl+'#playlist-import='+encodeURIComponent(JSON.stringify(rows)),'_blank');if(!target)alert('Could not return to the ranker. Allow pop-ups and try again.')})();`;
+  return `javascript:${source}`;
+}
+
 export function assignIds(items) {
   if (!Array.isArray(items)) return [];
   return items.map(function(item, index) {
