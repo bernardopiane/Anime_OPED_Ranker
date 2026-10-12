@@ -55,17 +55,22 @@ function extractJsonFrom(text, startBrace) {
 }
 
 function findInitialData(html) {
-  const marker = html.indexOf('ytInitialData');
-  if (marker === -1) return null;
-  const brace = html.indexOf('{', marker);
-  if (brace === -1) return null;
-  const jsonText = extractJsonFrom(html, brace);
-  if (!jsonText) return null;
-  try {
-    return JSON.parse(jsonText);
-  } catch {
-    return null;
+  let marker = html.indexOf('ytInitialData');
+  while (marker !== -1) {
+    const brace = html.indexOf('{', marker);
+    if (brace === -1) return null;
+    const jsonText = extractJsonFrom(html, brace);
+    if (jsonText) {
+      try {
+        return JSON.parse(jsonText);
+      } catch {
+        marker = html.indexOf('ytInitialData', marker + 1);
+        continue;
+      }
+    }
+    marker = html.indexOf('ytInitialData', marker + 1);
   }
+  return null;
 }
 
 function titleText(node) {

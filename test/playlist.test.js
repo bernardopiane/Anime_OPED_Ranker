@@ -95,6 +95,18 @@ test('extractFromHtml reads newer lockupViewModel nodes', () => {
   ]);
 });
 
+test('extractFromHtml skips earlier ytInitialData references before the page data', () => {
+  const html =
+    '<script>if (typeof ytInitialData !== "undefined") use({type:"ready"});</script>' +
+    '<script>var ytInitialData = {"items":[' +
+    '{"lockupViewModel":{"contentId":"ddddddddddd","contentType":"LOCKUP_CONTENT_TYPE_VIDEO",' +
+    '"metadata":{"lockupMetadataViewModel":{"title":{"content":"Fourth OP"}}}}}' +
+    ']};</script>';
+  assert.deepEqual(extractFromHtml(html), [
+    { title: 'Fourth OP', url: 'https://www.youtube.com/watch?v=ddddddddddd' },
+  ]);
+});
+
 test('extractFromHtml de-duplicates repeated video ids', () => {
   const html =
     '<script>var ytInitialData = {"items":[' +
