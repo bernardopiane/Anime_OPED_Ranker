@@ -133,8 +133,27 @@ function extractByRegex(html) {
   return ids.map((entry, i) => {
     const end = i + 1 < ids.length ? ids[i + 1].index : Infinity;
     const found = titles.find((t) => t.index >= entry.index && t.index < end);
-    const title = found && found.text ? found.text : entry.id;
-    return { title, url: watchUrl(entry.id) };
+    if (found && found.text) {
+      return { title: found.text, url: watchUrl(entry.id) };
+    }
+    const windowStart = Math.max(0, entry.index - 100);
+    const windowEnd = entry.index + 50;
+    const window = html.slice(windowStart, windowEnd);
+    const ariaLabelMatch = /aria-label="([^"]+)"/.exec(window);
+    if (ariaLabelMatch) {
+      const text = ariaLabelMatch[1].trim();
+      if (text.length > 5 && text.length < 200) {
+        return { title: text, url: watchUrl(entry.id) };
+      }
+    }
+    const titleAttrMatch = /title="([^"]+)"/.exec(window);
+    if (titleAttrMatch) {
+      const text = titleAttrMatch[1].trim();
+      if (text.length > 5 && text.length < 200 && !text.includes('YouTube') && !text.includes('Subscribe')) {
+        return { title: text, url: watchUrl(entry.id) };
+      }
+    }
+    return { title: entry.id, url: watchUrl(entry.id) };
   });
 }
 

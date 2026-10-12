@@ -114,6 +114,16 @@ test('extractFromHtml falls back to raw video ids when ytInitialData is absent',
   ]);
 });
 
+test('extractFromHtml regex fallback uses aria-label for titles', () => {
+  const html =
+    'aria-label="First Anime Opening" <span>"videoId":"fffffffffff"</span> ' +
+    'aria-label="Second Ending Song" <span>"videoId":"ggggggggggg"</span>';
+  assert.deepEqual(extractFromHtml(html), [
+    { title: 'First Anime Opening', url: 'https://www.youtube.com/watch?v=fffffffffff' },
+    { title: 'Second Ending Song', url: 'https://www.youtube.com/watch?v=ggggggggggg' },
+  ]);
+});
+
 test('extractFromHtml returns an empty array when there are no videos', () => {
   assert.deepEqual(extractFromHtml('<html><body>nothing</body></html>'), []);
   assert.deepEqual(extractFromHtml(''), []);
