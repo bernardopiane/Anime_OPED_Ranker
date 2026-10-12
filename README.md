@@ -141,7 +141,33 @@ Requirements: a modern browser, plus Python or Node.js to serve the files.
 node --test        # run the test suite
 ```
 
+## Deployment
+
+This is a static site that can be deployed to any hosting platform. Configuration files are included for:
+
+### Vercel
+
+1. Push your code to GitHub
+2. Import the repository in [Vercel](https://vercel.com)
+3. Deploy - Vercel will detect the static site automatically
+
+### Netlify
+
+1. Push your code to GitHub
+2. Import the repository in [Netlify](https://netlify.com)
+3. Deploy - Netlify will detect the static site automatically
+
+### Cloudflare Pages
+
+1. Push your code to GitHub
+2. Create a new project in [Cloudflare Pages](https://pages.cloudflare.com)
+3. Connect your GitHub repository
+4. Build settings: leave empty (no build command needed)
+
+All platforms will serve the site over HTTPS, which is required for ES modules and localStorage to work correctly.
+
 ## Notes
 
 - Everything runs client-side; there is no backend and no build step.
 - Network access is needed only to resolve and play previews.
+- The app requires HTTPS or HTTP (not file://) to function properly due to ES module restrictions.
