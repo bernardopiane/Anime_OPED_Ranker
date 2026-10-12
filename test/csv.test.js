@@ -16,6 +16,13 @@ test('preserves commas inside titles', () => {
   assert.equal(items[0].url, 'https://x/y');
 });
 
+test('parses quoted CSV fields and escaped quotes', () => {
+  const items = parseCsv('"Title, with a comma and ""quotes""","https://www.youtube.com/watch?v=tL1CcZ05_5s"');
+  assert.deepEqual(items, [
+    { id: 0, title: 'Title, with a comma and "quotes"', url: 'https://www.youtube.com/watch?v=tL1CcZ05_5s' },
+  ]);
+});
+
 test('skips blank lines', () => {
   const items = parseCsv('\n\nA,http://a\n\n');
   assert.equal(items.length, 1);

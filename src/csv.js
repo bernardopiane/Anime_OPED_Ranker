@@ -5,11 +5,19 @@ export function parseCsv(text) {
     if (line.trim() === '') continue;
     const comma = line.lastIndexOf(',');
     if (comma === -1) continue;
-    const title = line.slice(0, comma).trim();
-    const url = line.slice(comma + 1).trim();
+    const title = parseField(line.slice(0, comma));
+    const url = parseField(line.slice(comma + 1));
     if (title === '' || url === '') continue;
     items.push({ id, title, url });
     id += 1;
   }
   return items;
+}
+
+function parseField(value) {
+  const field = value.trim();
+  if (field.startsWith('"') && field.endsWith('"')) {
+    return field.slice(1, -1).replace(/""/g, '"');
+  }
+  return field;
 }
