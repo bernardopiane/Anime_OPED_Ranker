@@ -1,7 +1,7 @@
 # Playlist → CSV Tool — Design
 
 - **Date:** 2026-10-11
-- **Status:** Approved (ready for implementation plan)
+- **Status:** Implemented; import flow revised 2026-10-12
 - **Feature:** Turn a YouTube playlist into a `title,link` CSV from the Start screen, so
   users can build their own list and immediately rank it.
 
@@ -10,6 +10,24 @@
 The app can already rank a list loaded from a `title,link` CSV via the "Load your own CSV"
 file input. Building that CSV from scratch is tedious. Users often have their OP/ED picks
 in a **YouTube playlist** and want a one-step way to turn it into a rankable list.
+
+## Current implementation (2026-10-12)
+
+The browser cannot read YouTube's page DOM from the ranker because of the same-origin
+policy. The tool now opens a validated YouTube playlist in a separate tab and uses a
+user-saved bookmarklet, run on that tab, to extract the currently rendered videos from
+`.ytItemSectionRendererHost`. The bookmarklet sends the records back with `postMessage`;
+if YouTube has severed the opener, it opens a ranker tab with the extracted data in its
+URL fragment instead. The ranker validates incoming records before making them available
+to download or use directly.
+
+CSV downloads follow the supplied extractor's `video title,url` header and quoted fields.
+The ranker's CSV importer ignores this header so the downloaded file can be loaded back
+into the app. The user may need to scroll/load more items before running the bookmarklet;
+it only extracts videos currently rendered on the playlist page.
+
+The sections below document the original design and are retained as history; where they
+conflict with this current implementation, the current implementation takes precedence.
 
 Browsers cannot read `youtube.com` directly (CORS), so the feature needs a sanctioned
 network route and an offline route.

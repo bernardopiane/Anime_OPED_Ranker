@@ -12,7 +12,12 @@ import {
   hydrateVideoCache,
 } from './src/cache.js';
 import { podiumEntries } from './src/podium.js';
-import { parsePlaylistId, toPlaylistCsv, extractFromHtml, fetchPlaylist, assignIds } from './src/playlist.js';
+import {
+  normalizePlaylistItems,
+  normalizePlaylistUrl,
+  toPlaylistCsv,
+  assignIds,
+} from './src/playlist.js';
 
 const CSV_URL = 'opening%20list.csv';
 
@@ -898,8 +903,8 @@ el('again-btn').addEventListener('click', () => {
 
 initTheme();
 
-const KEY_STORAGE = 'oped-yt-key';
 let pendingPlaylistItems = null;
+let playlistWindow = null;
 
 function playlistStatus(message, isError) {
   const node = el('playlist-status');
@@ -907,98 +912,92 @@ function playlistStatus(message, isError) {
   node.classList.toggle('is-error', Boolean(isError));
 }
 
-function showExtracted(result) {
-  const items = result.items || [];
+function setPlaylistResults(items) {
   pendingPlaylistItems = items.length ? items : null;
   const has = Boolean(pendingPlaylistItems);
   el('playlist-download-btn').disabled = !has;
   el('playlist-use-btn').disabled = !has;
   if (!has) {
-    playlistStatus('No videos found.', true);
+    playlistStatus('No videos found in that playlist.', true);
     return;
   }
   const noun = items.length === 1 ? 'video' : 'videos';
-  const base = `Found ${items.length} ${noun}`;
-  playlistStatus(result.skipped ? `${base}, skipped ${result.skipped} unavailable.` : `${base}.`);
+  playlistStatus(`Found ${items.length} ${noun}.`);
 }
 
-function playlistErrorMessage(err) {
-  switch (err && err.code) {
-    case 'MISSING_KEY': return 'Enter your YouTube API key, or use the saved page.';
-    case 'BAD_KEY': return 'The API key was rejected.';
-    case 'FORBIDDEN': return "Quota exceeded, or the YouTube Data API isn't enabled for that key.";
-    case 'NOT_FOUND': return "That playlist wasn't found.";
-    case 'NETWORK': return "Couldn't reach YouTube. Check your connection, or use the saved page.";
-    default: return 'Something went wrong. Try again, or use the saved page.';
-  }
+function buildPlaylistBookmarklet() {
+  const appUrl = JSON.stringify(location.href.split('#')[0]);
+  const appOrigin = JSON.stringify(location.origin);
+  const source = `(()=>{const appUrl=${appUrl},appOrigin=${appOrigin},videos=new Map(),bad=/^(watch later|share|save|add to queue|shorts|play all|shuffle)$/i;function titleOf(a){let t=(a.getAttribute('title')||a.getAttribute('aria-label')||'').trim();if(!t){const box=a.closest('yt-lockup-view-model,ytd-rich-item-renderer,ytd-rich-grid-media,ytd-playlist-video-renderer');if(box){const h=box.querySelector('h3,h3 span,.yt-lockup-metadata-view-model-wiz__title,[role="heading"]');if(h)t=(h.getAttribute('title')||h.textContent||'').trim()}}if(!t)t=(a.textContent||'').trim();return t||null}for(const host of document.querySelectorAll('.ytItemSectionRendererHost'))for(const a of host.querySelectorAll('a[href*="/watch?v="]')){const m=(a.getAttribute('href')||'').match(/[?&]v=([\\w-]{11})/);if(!m||videos.has(m[1]))continue;const title=titleOf(a);if(!title||bad.test(title))continue;videos.set(m[1],{title,url:'https://www.youtube.com/watch?v='+m[1]})}const rows=Array.from(videos.values());if(!rows.length){alert('No playlist videos found. Make sure the playlist has loaded, then try again.');return}if(window.opener&&!window.opener.closed){window.opener.postMessage({type:'anime-op-ed-ranker-playlist',videos:rows},appOrigin);alert('Sent '+rows.length+' videos to Anime OP/ED Ranker.');return}const target=window.open(appUrl+'#playlist-import='+encodeURIComponent(JSON.stringify(rows)),'_blank');if(!target)alert('Could not return to the ranker. Allow pop-ups and try again.')})();`;
+  return `javascript:${source}`;
 }
 
-async function runPlaylistApiRoute() {
-  const id = parsePlaylistId(el('playlist-url').value);
-  if (!id) {
-    playlistStatus("That doesn't look like a playlist link.", true);
+const YOUTUBE_ORIGINS = new Set([
+  'https://youtube.com',
+  'https://www.youtube.com',
+  'https://m.youtube.com',
+  'https://music.youtube.com',
+]);
+
+function importPlaylistItems(items) {
+  const normalized = normalizePlaylistItems(items);
+  if (normalized.length === 0) {
+    setPlaylistResults([]);
     return;
   }
-  const key = el('playlist-key').value.trim();
-  if (!key) {
-    playlistStatus('Enter your YouTube API key, or use the saved page.', true);
-    return;
-  }
-  playlistStatus('Fetching…');
+  setPlaylistResults(normalized);
+}
+
+function restorePlaylistImport() {
+  if (!location.hash.startsWith('#playlist-import=')) return;
+  const encoded = new URLSearchParams(location.hash.slice(1)).get('playlist-import');
   try {
-    const result = await fetchPlaylist(id, key);
-    try {
-      if (el('playlist-remember').checked) localStorage.setItem(KEY_STORAGE, key);
-      else localStorage.removeItem(KEY_STORAGE);
-    } catch {}
-    showExtracted(result);
-  } catch (err) {
-    playlistStatus(playlistErrorMessage(err), true);
+    importPlaylistItems(JSON.parse(encoded || 'null'));
+  } catch {
+    playlistStatus('The returned playlist data was invalid. Run the bookmarklet again.', true);
   }
-}
-
-function runPlaylistHtmlRoute(html) {
-  if (typeof html !== 'string' || html.trim() === '') {
-    playlistStatus('Paste or upload the saved playlist page first.', true);
-    return;
-  }
-  const items = extractFromHtml(html);
-  if (items.length === 0) {
-    playlistStatus("Couldn't find videos in that page — save the playlist page, not the home page.", true);
-    return;
-  }
-  showExtracted({ items, skipped: 0 });
+  history.replaceState(null, '', `${location.pathname}${location.search}`);
 }
 
 function initPlaylistTool() {
   if (!el('playlist-tool')) return;
-  try {
-    const savedKey = localStorage.getItem(KEY_STORAGE);
-    if (savedKey) {
-      el('playlist-key').value = savedKey;
-      el('playlist-remember').checked = true;
-    }
-  } catch {}
 
-  el('playlist-api-btn').addEventListener('click', runPlaylistApiRoute);
-
-  el('playlist-html-btn').addEventListener('click', () => {
-    runPlaylistHtmlRoute(el('playlist-html').value);
-  });
-
-  el('playlist-file').addEventListener('change', async (event) => {
-    const file = event.target.files && event.target.files[0];
-    event.target.value = '';
-    if (!file) return;
-    let text;
-    try {
-      text = await file.text();
-    } catch {
-      playlistStatus('Could not read that file.', true);
+  const bookmarklet = el('playlist-bookmarklet');
+  bookmarklet.href = buildPlaylistBookmarklet();
+  el('playlist-open-btn').addEventListener('click', () => {
+    const url = normalizePlaylistUrl(el('playlist-url').value);
+    if (!url) {
+      playlistStatus('Enter a valid YouTube playlist link.', true);
       return;
     }
-    runPlaylistHtmlRoute(text);
+    pendingPlaylistItems = null;
+    el('playlist-download-btn').disabled = true;
+    el('playlist-use-btn').disabled = true;
+    playlistWindow = window.open(url, 'anime-oped-playlist-import');
+    if (!playlistWindow) {
+      playlistStatus('Your browser blocked the playlist tab. Allow pop-ups, then try again.', true);
+      return;
+    }
+    playlistWindow.focus();
+    playlistStatus('Playlist opened. Click the saved bookmarklet on the YouTube tab to import its videos.');
   });
+
+  el('playlist-copy-bookmarklet').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(bookmarklet.getAttribute('href'));
+      playlistStatus('Bookmarklet copied. Add it as a browser bookmark, then click it on YouTube.');
+    } catch {
+      playlistStatus('Could not copy the bookmarklet. Drag its link to your bookmarks bar instead.', true);
+    }
+  });
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== playlistWindow || !YOUTUBE_ORIGINS.has(event.origin)) return;
+    if (!event.data || event.data.type !== 'anime-op-ed-ranker-playlist') return;
+    importPlaylistItems(event.data.videos);
+  });
+
+  restorePlaylistImport();
 
   el('playlist-download-btn').addEventListener('click', () => {
     if (!pendingPlaylistItems) return;

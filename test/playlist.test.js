@@ -1,6 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePlaylistId, watchUrl, toPlaylistCsv, extractFromHtml, mapApiItems, fetchPlaylist, assignIds } from '../src/playlist.js';
+import {
+  parsePlaylistId,
+  normalizePlaylistUrl,
+  normalizePlaylistItems,
+  watchUrl,
+  toPlaylistCsv,
+  extractFromHtml,
+  mapApiItems,
+  fetchPlaylist,
+  assignIds,
+} from '../src/playlist.js';
 import { parseCsv } from '../src/csv.js';
 
 test('parsePlaylistId reads the list param from a playlist URL', () => {
@@ -35,26 +45,48 @@ test('parsePlaylistId returns null when there is no usable id', () => {
   assert.equal(parsePlaylistId(undefined), null);
 });
 
+test('normalizePlaylistUrl accepts YouTube playlist links only', () => {
+  assert.equal(
+    normalizePlaylistUrl('https://m.youtube.com/playlist?list=PLabcDEF1234567890'),
+    'https://www.youtube.com/playlist?list=PLabcDEF1234567890',
+  );
+  assert.equal(normalizePlaylistUrl('https://example.com/playlist?list=PLabcDEF123'), null);
+  assert.equal(normalizePlaylistUrl('PLabcDEF123'), null);
+});
+
+test('normalizePlaylistItems validates and de-duplicates extracted videos', () => {
+  assert.deepEqual(normalizePlaylistItems([
+    { title: ' First OP ', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+    { title: 'Duplicate', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+    { title: 'Share', url: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' },
+    { title: 'Not YouTube', url: 'https://example.com/watch?v=ccccccccccc' },
+    { title: 'Bad ID', url: 'https://www.youtube.com/watch?v=short' },
+  ]), [
+    { title: 'First OP', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+  ]);
+});
+
 test('watchUrl builds a standard watch link', () => {
   assert.equal(watchUrl('aaaaaaaaaaa'), 'https://www.youtube.com/watch?v=aaaaaaaaaaa');
 });
 
-test('toPlaylistCsv emits title,link rows with no header', () => {
+test('toPlaylistCsv emits the quoted script format with a header', () => {
   const csv = toPlaylistCsv([
     { title: 'First OP', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
     { title: 'Second OP', url: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' },
   ]);
   assert.equal(
     csv,
-    'First OP,https://www.youtube.com/watch?v=aaaaaaaaaaa\n' +
-      'Second OP,https://www.youtube.com/watch?v=bbbbbbbbbbb',
+    'video title,url\r\n' +
+      '"First OP","https://www.youtube.com/watch?v=aaaaaaaaaaa"\r\n' +
+      '"Second OP","https://www.youtube.com/watch?v=bbbbbbbbbbb"',
   );
 });
 
-test('a comma in a title survives a round-trip through parseCsv', () => {
+test('quoted playlist CSV round-trips commas and quotes in titles', () => {
   const url = 'https://www.youtube.com/watch?v=aaaaaaaaaaa';
-  const csv = toPlaylistCsv([{ title: 'Naruto, Opening 1', url }]);
-  assert.deepEqual(parseCsv(csv), [{ id: 0, title: 'Naruto, Opening 1', url }]);
+  const csv = toPlaylistCsv([{ title: 'Naruto, "Opening 1"', url }]);
+  assert.deepEqual(parseCsv(csv), [{ id: 0, title: 'Naruto, "Opening 1"', url }]);
 });
 
 test('extractFromHtml regex fallback pairs titles within each video id range', () => {

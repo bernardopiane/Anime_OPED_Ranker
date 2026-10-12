@@ -15,8 +15,56 @@ export function parsePlaylistId(input) {
   return id && ID_RE.test(id) ? id : null;
 }
 
+export function normalizePlaylistUrl(input) {
+  if (typeof input !== 'string') return null;
+  let url;
+  try {
+    url = new URL(input.trim());
+  } catch {
+    return null;
+  }
+  const hosts = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtu.be']);
+  const id = parsePlaylistId(input);
+  if (!['http:', 'https:'].includes(url.protocol) || !hosts.has(url.hostname.toLowerCase()) || !id) {
+    return null;
+  }
+  return `https://www.youtube.com/playlist?list=${encodeURIComponent(id)}`;
+}
+
 export function watchUrl(videoId) {
   return 'https://www.youtube.com/watch?v=' + videoId;
+}
+
+export function normalizePlaylistItems(items) {
+  if (!Array.isArray(items)) return [];
+  const badTitle = /^(watch later|share|save|add to queue|shorts|play all|shuffle)$/i;
+  const seen = new Set();
+  const normalized = [];
+  for (const item of items) {
+    if (!item || typeof item.title !== 'string' || typeof item.url !== 'string') continue;
+    const title = item.title.trim();
+    if (!title || badTitle.test(title)) continue;
+    let url;
+    try {
+      url = new URL(item.url);
+    } catch {
+      continue;
+    }
+    const videoId = url.searchParams.get('v');
+    if (
+      url.protocol !== 'https:' ||
+      url.hostname !== 'www.youtube.com' ||
+      url.pathname !== '/watch' ||
+      !videoId ||
+      !/^[A-Za-z0-9_-]{11}$/.test(videoId) ||
+      seen.has(videoId)
+    ) {
+      continue;
+    }
+    seen.add(videoId);
+    normalized.push({ title, url: watchUrl(videoId) });
+  }
+  return normalized;
 }
 
 export function assignIds(items) {
@@ -27,7 +75,11 @@ export function assignIds(items) {
 }
 
 export function toPlaylistCsv(items) {
-  return items.map(function(item) { return item.title + ',' + item.url; }).join('\n');
+  const quote = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  return [
+    'video title,url',
+    ...items.map((item) => [item.title, item.url].map(quote).join(',')),
+  ].join('\r\n');
 }
 
 const VIDEO_ID_RE = /^[A-Za-z0-9_-]{11}$/;

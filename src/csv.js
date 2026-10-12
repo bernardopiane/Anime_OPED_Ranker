@@ -8,6 +8,9 @@ export function parseCsv(text) {
     const title = parseField(line.slice(0, comma));
     const url = parseField(line.slice(comma + 1));
     if (title === '' || url === '') continue;
+    if ((title.toLowerCase() === 'title' || title.toLowerCase() === 'video title') && url.toLowerCase() === 'url') {
+      continue;
+    }
     items.push({ id, title, url });
     id += 1;
   }
