@@ -107,6 +107,26 @@ test('extractFromHtml skips earlier ytInitialData references before the page dat
   ]);
 });
 
+test('extractFromHtml adds titled playlist cards after the initial data without suggested videos', () => {
+  const html =
+    '<script>var ytInitialData = {"items":[' +
+    '{"playlistVideoRenderer":{"videoId":"aaaaaaaaaaa","title":{"simpleText":"First OP"}}}' +
+    ']};</script>' +
+    '<div class="ytLockupViewModelHost content-id-aaaaaaaaaaa">' +
+    '<h3 title="First OP"><a href="https://www.youtube.com/watch?v=aaaaaaaaaaa&amp;list=PLplaylist123&amp;index=1"' +
+    ' class="ytLockupMetadataViewModelTitle">First OP</a></h3></div>' +
+    '<div class="ytLockupViewModelHost content-id-bbbbbbbbbbb">' +
+    '<h3 title="Second &amp; Final"><a href="https://www.youtube.com/watch?v=bbbbbbbbbbb&amp;list=PLplaylist123&amp;index=2"' +
+    ' class="ytLockupMetadataViewModelTitle">Second &amp; Final</a></h3></div>' +
+    '<div class="ytLockupViewModelHost content-id-ccccccccccc">' +
+    '<h3 title="Suggested"><a href="https://www.youtube.com/watch?v=ccccccccccc"' +
+    ' class="ytLockupMetadataViewModelTitle">Suggested</a></h3></div>';
+  assert.deepEqual(extractFromHtml(html), [
+    { title: 'First OP', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+    { title: 'Second & Final', url: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' },
+  ]);
+});
+
 test('extractFromHtml de-duplicates repeated video ids', () => {
   const html =
     '<script>var ytInitialData = {"items":[' +

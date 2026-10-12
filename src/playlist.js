@@ -112,6 +112,47 @@ function collectVideos(node, out, seen) {
   }
 }
 
+function decodeHtmlEntities(value) {
+  return value.replace(/&(#x[\da-f]+|#\d+|amp|quot|apos|lt|gt);/gi, (entity, code) => {
+    if (code[0] !== '#') {
+      const entities = { amp: '&', quot: '"', apos: "'", lt: '<', gt: '>' };
+      return entities[code.toLowerCase()];
+    }
+    const number = code[1].toLowerCase() === 'x'
+      ? Number.parseInt(code.slice(2), 16)
+      : Number.parseInt(code.slice(1), 10);
+    return number <= 0x10ffff ? String.fromCodePoint(number) : entity;
+  });
+}
+
+function collectPlaylistCards(html, out, seen) {
+  const cards = [...html.matchAll(/content-id-([A-Za-z0-9_-]{11})/g)];
+  for (let i = 0; i < cards.length; i += 1) {
+    const card = html.slice(cards[i].index, cards[i + 1]?.index ?? html.length);
+    const link = [...card.matchAll(/<a\b[^>]*>/g)].find(([tag]) =>
+      /\bclass="[^"]*\bytLockupMetadataViewModelTitle\b[^"]*"/.test(tag),
+    );
+    if (!link) continue;
+    const href = /\bhref="([^"]+)"/.exec(link[0]);
+    const heading = /<h3\b[^>]*\btitle="([^"]*)"/.exec(card);
+    if (!href || !heading) continue;
+    let url;
+    try {
+      url = new URL(decodeHtmlEntities(href[1]));
+    } catch {
+      continue;
+    }
+    const videoId = url.searchParams.get('v');
+    if (
+      url.searchParams.has('list') &&
+      Number(url.searchParams.get('index')) > 0 &&
+      videoId === cards[i][1]
+    ) {
+      pushVideo(out, seen, videoId, decodeHtmlEntities(heading[1]));
+    }
+  }
+}
+
 function decodeJsonString(raw) {
   try {
     return JSON.parse(`"${raw}"`);
@@ -172,6 +213,7 @@ export function extractFromHtml(html) {
   const seen = new Set();
   const data = findInitialData(html);
   if (data) collectVideos(data, out, seen);
+  collectPlaylistCards(html, out, seen);
   if (out.length > 0) return out;
   return extractByRegex(html);
 }
