@@ -114,13 +114,13 @@ test('extractFromHtml falls back to raw video ids when ytInitialData is absent',
   ]);
 });
 
-test('extractFromHtml regex fallback uses aria-label for titles', () => {
+test('extractFromHtml regex fallback extracts from CSS class content-id pattern', () => {
   const html =
-    'aria-label="First Anime Opening" <span>"videoId":"fffffffffff"</span> ' +
-    'aria-label="Second Ending Song" <span>"videoId":"ggggggggggg"</span>';
+    '<div class="content-id-fffffffffff"></div> ' +
+    '<div class="content-id-ggggggggggg"></div>';
   assert.deepEqual(extractFromHtml(html), [
-    { title: 'First Anime Opening', url: 'https://www.youtube.com/watch?v=fffffffffff' },
-    { title: 'Second Ending Song', url: 'https://www.youtube.com/watch?v=ggggggggggg' },
+    { title: 'fffffffffff', url: 'https://www.youtube.com/watch?v=fffffffffff' },
+    { title: 'ggggggggggg', url: 'https://www.youtube.com/watch?v=ggggggggggg' },
   ]);
 });
 

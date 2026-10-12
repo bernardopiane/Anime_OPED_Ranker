@@ -123,6 +123,10 @@ function extractByRegex(html) {
   while ((match = idRe.exec(html))) {
     if (!seen.has(match[1])) { seen.add(match[1]); ids.push({ id: match[1], index: match.index }); }
   }
+  const cssIdRe = /content-id-([A-Za-z0-9_-]{11})/g;
+  while ((match = cssIdRe.exec(html))) {
+    if (!seen.has(match[1])) { seen.add(match[1]); ids.push({ id: match[1], index: match.index }); }
+  }
   if (ids.length === 0) return [];
   const titles = [];
   const titleRe = /"title":\{(?:"runs":\[\{"text":"((?:[^"\\]|\\.)*)"|"simpleText":"((?:[^"\\]|\\.)*)")/g;
@@ -136,8 +140,8 @@ function extractByRegex(html) {
     if (found && found.text) {
       return { title: found.text, url: watchUrl(entry.id) };
     }
-    const windowStart = Math.max(0, entry.index - 100);
-    const windowEnd = entry.index + 50;
+    const windowStart = Math.max(0, entry.index - 200);
+    const windowEnd = entry.index + 200;
     const window = html.slice(windowStart, windowEnd);
     const ariaLabelMatch = /aria-label="([^"]+)"/.exec(window);
     if (ariaLabelMatch) {
@@ -149,7 +153,7 @@ function extractByRegex(html) {
     const titleAttrMatch = /title="([^"]+)"/.exec(window);
     if (titleAttrMatch) {
       const text = titleAttrMatch[1].trim();
-      if (text.length > 5 && text.length < 200 && !text.includes('YouTube') && !text.includes('Subscribe')) {
+      if (text.length > 5 && text.length < 200 && !text.includes('YouTube') && !text.includes('Subscribe') && !text.includes('More actions')) {
         return { title: text, url: watchUrl(entry.id) };
       }
     }
