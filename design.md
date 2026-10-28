@@ -13,7 +13,8 @@ tokens, shapes, motion, and voice rather than inventing new ones.
 - **Tone:** bold-playful — a broadcast fight card. Confident and game-like, never
   corporate or generic.
 - **Audience action per screen:** Start → begin or resume a ranking. Duel → pick a
-  winner. Results → read, copy, or download the finished ranking.
+  winner. Results → read, copy, or download the finished ranking. Library → manage,
+  edit, share, or activate a list.
 
 ## Theme — "Versus" (custom, dual light/dark)
 
@@ -122,6 +123,53 @@ The payoff diverges from the duel on purpose. It is its own contained world:
 - **Actions:** centred; **Play again** is the gold `--color-champion` primary, Copy and
   Download CSV stay outlined chips.
 
+## Lists — the library world
+
+The library is a quiet, workmanlike room next to the duel, not a third arena. It
+uses the same neutral ground, card surfaces, rules, and accent action as the Start
+screen; no new colours, fonts, or motion are introduced.
+
+- **Macro — Shelf:** an uppercase `YOUR LIBRARY` kicker over an `h1` **Lists**, one
+  line of voice ("Build a YouTube ranking list, reuse it, or share it as one code."),
+  then a toolbar with **Back** on the left and **New list** / **Import code** on the
+  right. Below it, a vertical stack of list cards inside the shared `--color-paper-2`
+  panel (`--radius-lg`, `--shadow-card`).
+- **List card:** a `--color-paper` surface with a `--color-rule` border and
+  `--radius-md`. The head row pairs the list name (`--text-md`, wraps anywhere) with
+  a mono uppercase pill badge — filled `--color-accent` + `--color-accent-ink` for
+  **Active**, outlined `--color-paper-2` + `--color-muted` for **Starter**. The meta
+  line is mono `--text-xs` in `--color-muted` ("12 videos"). The active card swaps
+  its border for `--color-accent` and adds a 1px inset accent ring, so activation is
+  legible without a dropdown.
+- **Card actions:** a wrapped row of pill buttons at the card foot. **Use** is the
+  filled accent primary and appears only on inactive lists; **Edit**, **Share**, and
+  **Duplicate** / **Duplicate to edit** are outlined chips; **Delete** is an outlined
+  danger chip. The starter offers no Delete and no Use while active.
+- **Editor:** the same panel, swapped in place: toolbar with **Back to library**,
+  **Duplicate**, and a mono video count, then the name field (capped at 32rem), the
+  add-video form (URL + optional title, separated by rules above and below), and the
+  numbered rows. Each row is a grid of a pill counter, two stacked fields, and a
+  wrapped action group (up/down/remove); at ≤ 560px the actions drop under the fields
+  and the panel padding tightens. The starter editor renders read-only: name and
+  rows are disabled, the add form is hidden, and the status line explains **Duplicate
+  to edit**.
+- **Status line:** `role="status"` `aria-live="polite"` under the toolbar, sharing
+  `--text-sm` / `--color-muted`; validation and structural warnings switch to
+  `--color-danger`. Messages are terse and in-voice: "Title saved.", "Video removed.",
+  "That video is already in this list.", "Link updated. The ranking was reset."
+- **Share modal:** reuses the dialog shell at `min(42rem, 100%)`. Two `share-block`
+  sections divided by a rule: export on top (mono, read-only textarea showing the
+  `oped1:` code, note naming the list and count, **Copy code**), import below (mono
+  textarea plus **Import**, note "Paste a code to add that list to your library.").
+  The modal traps focus, closes on Escape/backdrop, and returns focus to the Share
+  trigger. Imported lists are added without activating them.
+- **Motion:** no bespoke animation. The library and editor arrive with the shared
+  `.screen` reveal, the modal scales in with the existing `.modal-card` transition,
+  and everything obeys `prefers-reduced-motion: reduce`.
+- **Copy:** dry and practical — "The starter list is read-only. Duplicate it to make
+  changes." · "A list needs a name." · "Enter a valid YouTube link." · "That code is
+  not a valid list."
+
 ## Navigation & footer
 
 - **Nav — N2 Floating chip:** a single out-of-flow theme chip (fixed top-right) that
@@ -205,6 +253,11 @@ stays the loudest thing on screen.
   button carries `aria-label="Pick {title}"`, so picking is reachable by Tab + Enter.
 - The preview is a `role="dialog"` `aria-modal` with a Tab focus trap and focus
   restored to the trigger on close.
+- The share modal follows the same dialog contract: Tab cycles its controls, Escape
+  and the backdrop close it, and focus returns to the Share button.
+- Library actions are real buttons in source order; the editor status, share status,
+  and start-screen status are polite live regions, so saves and validation failures
+  are announced without moving focus.
 - A `role="status"` `aria-live="polite"` region announces each new round and matchup.
 - Each vote meter carries an `aria-label` with its side, vote count, and percentage;
   the chat status line and HUD chip are polite live regions.
@@ -215,6 +268,8 @@ stays the loudest thing on screen.
   Results screen, **Play again** is the filled gold `--color-champion` primary.
 - **Pick A / Pick B:** filled team pill, full width, at the panel foot.
 - **Secondary** (Reset, Copy, Download, Undo, Preview, Pause, Clear votes): outlined chip.
+- **Library:** **Use** is the filled accent primary for an inactive list; **Edit**,
+  **Share**, and **Duplicate** stay outlined, and **Delete** is outlined danger.
 
 ## Copy
 

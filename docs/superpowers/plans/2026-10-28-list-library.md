@@ -50,14 +50,14 @@
   `removeItem`, `moveItem`, `updateItemTitle`, `updateItemUrl`, `renameList`,
   `structureKey`, `sameStructure`, `normalizeRecord`, `isResumableRecord`.
 
-- [ ] **Step 1: Write failing tests** covering sanitation and unique names,
+- [x] **Step 1: Write failing tests** covering sanitation and unique names,
   CRUD with reindexing, item/title limits, structure comparison, starter shape,
   v2 custom/default migration, corrupt input, and resume rejection for
   duplicates/foreign ids.
-- [ ] **Step 2: Implement `src/lists.js`** with immutable operations returning
+- [x] **Step 2: Implement `src/lists.js`** with immutable operations returning
   new lists (`null` when an operation is invalid).
-- [ ] **Step 3: Run `node --test test/lists.test.js`** until green.
-- [ ] **Step 4: Commit.**
+- [x] **Step 3: Run `node --test test/lists.test.js`** until green.
+- [x] **Step 4: Commit.**
 
 ### Task 2: Share codes
 
@@ -69,12 +69,12 @@
 - Produces: `PREFIX`, `RAW_PREFIX`, `MAX_CODE_LENGTH`, `MAX_DECODED_BYTES`,
   `encodeList(list, options)`, `decodeList(code, options)`.
 
-- [ ] **Step 1: Write failing tests** for compressed and raw round trips,
+- [x] **Step 1: Write failing tests** for compressed and raw round trips,
   Unicode, malformed input, caps, and the compression fallback.
-- [ ] **Step 2: Implement** byte-based base64url, streaming compress/decompress
+- [x] **Step 2: Implement** byte-based base64url, streaming compress/decompress
   with output caps, and strict payload validation.
-- [ ] **Step 3: Run the share tests.**
-- [ ] **Step 4: Commit.**
+- [x] **Step 3: Run the share tests.**
+- [x] **Step 4: Commit.**
 
 ### Task 3: YouTube title lookup
 
@@ -85,10 +85,10 @@
 **Interfaces:**
 - Produces: `normalizeYouTubeUrl`, `oembedUrl`, `fetchVideoTitle`.
 
-- [ ] **Step 1: Write failing tests** for every supported URL form, oEmbed URL
+- [x] **Step 1: Write failing tests** for every supported URL form, oEmbed URL
   encoding, success, failure, and invalid payloads.
-- [ ] **Step 2: Implement** the module with injected `fetchImpl`.
-- [ ] **Step 3: Run the tests and commit.**
+- [x] **Step 2: Implement** the module with injected `fetchImpl`.
+- [x] **Step 3: Run the tests and commit.**
 
 ### Task 4: Storage and cache
 
@@ -96,10 +96,10 @@
 - Modify: `src/cache.js`, `src/storage.js`, `test/cache.test.js`
 - Test: `test/storage.test.js` (new)
 
-- [ ] **Step 1: Update cache tests** to version 3 and URL-keyed helpers only.
-- [ ] **Step 2: Implement** `RECORD_VERSION = 3`, remove `cacheEntries` /
+- [x] **Step 1: Update cache tests** to version 3 and URL-keyed helpers only.
+- [x] **Step 2: Implement** `RECORD_VERSION = 3`, remove `cacheEntries` /
   `hydrateEntries`, add `loadRaw` / `saveBackup` to storage.
-- [ ] **Step 3: Run the tests and commit.**
+- [x] **Step 3: Run the tests and commit.**
 
 ### Task 5: Library and editor markup and styles
 
@@ -109,24 +109,24 @@
   button on the start screen.
 - Test: extend `test/styles.test.js` for the new card/row/modal rules.
 
-- [ ] **Step 1: Add markup** with semantic headings, labels, and live regions.
-- [ ] **Step 2: Add CSS** using existing tokens, 44 px targets, and 320 px
+- [x] **Step 1: Add markup** with semantic headings, labels, and live regions.
+- [x] **Step 2: Add CSS** using existing tokens, 44 px targets, and 320 px
   resilience.
-- [ ] **Step 3: Run the style tests and commit.**
+- [x] **Step 3: Run the style tests and commit.**
 
 ### Task 6: Wire library, editor, and activation in `app.js`
 
 **Files:**
 - Modify: `app.js`
 
-- [ ] **Step 1: Replace `customSource` state** with `library` plus
+- [x] **Step 1: Replace `customSource` state** with `library` plus
   `activeListId`; load, migrate, back up, and hydrate the v3 record.
-- [ ] **Step 2: Implement** persistence, library rendering, activation with the
+- [x] **Step 2: Implement** persistence, library rendering, activation with the
   run-ending alert, editor rendering, add/remove/move/url/title edits, and
   starter duplication.
-- [ ] **Step 3: Rewire** Start, Resume, Reset, CSV upload, and playlist import
+- [x] **Step 3: Rewire** Start, Resume, Reset, CSV upload, and playlist import
   to lists.
-- [ ] **Step 4: Manually verify** reload, resume, switching, and editing; run
+- [x] **Step 4: Manually verify** reload, resume, switching, and editing; run
   `node --test`; commit.
 
 ### Task 7: Share and import UI
@@ -134,18 +134,18 @@
 **Files:**
 - Modify: `app.js`, `index.html`
 
-- [ ] **Step 1: Implement** the share modal open/close, focus trap, copy, and
+- [x] **Step 1: Implement** the share modal open/close, focus trap, copy, and
   import with unique names and status messages.
-- [ ] **Step 2: Verify** round trip and malformed codes manually.
-- [ ] **Step 3: Run `node --test` and commit.**
+- [x] **Step 2: Verify** round trip and malformed codes manually.
+- [x] **Step 3: Run `node --test` and commit.**
 
 ### Task 8: Documentation and final verification
 
 **Files:**
 - Modify: `README.md`, `design.md`
 
-- [ ] **Step 1: Document** the library workflow, share codes, and module map.
-- [ ] **Step 2: Document** the library card, editor row, and share modal in the
+- [x] **Step 1: Document** the library workflow, share codes, and module map.
+- [x] **Step 2: Document** the library card, editor row, and share modal in the
   design system.
-- [ ] **Step 3: Run `node --test` and a full manual pass.**
-- [ ] **Step 4: Commit.**
+- [x] **Step 3: Run `node --test` and a full manual pass.**
+- [x] **Step 4: Commit.**
