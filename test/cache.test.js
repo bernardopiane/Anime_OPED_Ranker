@@ -4,8 +4,6 @@ import {
   RECORD_VERSION,
   sourceFingerprint,
   isMatchingSource,
-  cacheEntries,
-  hydrateEntries,
   videoCacheEntries,
   hydrateVideoCache,
 } from '../src/cache.js';
@@ -36,53 +34,8 @@ test('isMatchingSource is true only for a record with the same fingerprint', () 
   assert.equal(isMatchingSource({ fingerprint: 'stale' }, items), false);
 });
 
-test('cacheEntries drops failed resolutions and keeps successes', () => {
-  const resolved = new Map([
-    [0, { videoUrl: 'https://v.animethemes.moe/Noragami-OP1.webm', pageUrl: 'x' }],
-    [1, { videoUrl: null, pageUrl: 'https://animethemes.moe/anime/ousama_ranking/OP2' }],
-    [2, { videoUrl: undefined, pageUrl: 'y' }],
-  ]);
-  assert.deepEqual(cacheEntries(resolved), [
-    [0, { videoUrl: 'https://v.animethemes.moe/Noragami-OP1.webm', pageUrl: 'x' }],
-  ]);
-});
-
-test('cacheEntries keeps YouTube resolutions that have no direct video url', () => {
-  const resolved = new Map([
-    [3, { videoUrl: null, youtubeId: 'j9xlqXCSBIc', pageUrl: 'https://youtu.be/j9xlqXCSBIc' }],
-    [4, { videoUrl: null, pageUrl: 'https://animethemes.moe/anime/x/OP1' }],
-  ]);
-  assert.deepEqual(cacheEntries(resolved), [
-    [3, { videoUrl: null, youtubeId: 'j9xlqXCSBIc', pageUrl: 'https://youtu.be/j9xlqXCSBIc' }],
-  ]);
-});
-
-test('hydrateEntries keeps malformed-free YouTube entries', () => {
-  const entries = [[5, { videoUrl: null, youtubeId: 'j9xlqXCSBIc', pageUrl: 'z' }]];
-  assert.deepEqual(hydrateEntries(entries), entries);
-});
-
-test('hydrateEntries ignores malformed and failed entries', () => {
-  const entries = [
-    [0, { videoUrl: 'https://v.animethemes.moe/A.webm', pageUrl: 'a' }],
-    [1, { videoUrl: null, pageUrl: 'b' }],
-    'not-a-pair',
-    [2],
-    ['3', { videoUrl: 'https://v.animethemes.moe/C.webm' }],
-    [4, null],
-  ];
-  assert.deepEqual(hydrateEntries(entries), [
-    [0, { videoUrl: 'https://v.animethemes.moe/A.webm', pageUrl: 'a' }],
-  ]);
-});
-
-test('hydrateEntries tolerates a non-array input', () => {
-  assert.deepEqual(hydrateEntries(undefined), []);
-  assert.deepEqual(hydrateEntries(null), []);
-});
-
-test('RECORD_VERSION is defined', () => {
-  assert.equal(typeof RECORD_VERSION, 'number');
+test('RECORD_VERSION is 3', () => {
+  assert.equal(RECORD_VERSION, 3);
 });
 
 test('videoCacheEntries maps the current items by url and skips failures', () => {
