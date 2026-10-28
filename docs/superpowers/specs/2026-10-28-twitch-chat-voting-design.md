@@ -71,9 +71,10 @@ to make the final pick. Voting is advisory: chat never advances the bracket.
   3. Send `NICK justinfan<random digits>`.
   4. Send `JOIN #<channel>`.
 - Reply to every `PING` with the matching `PONG`; handle Twitch `RECONNECT`.
-- Parse CRLF-delimited IRC messages. Use the `user-id` tag when present, falling
-  back to the login in the `:login!login@login.tmi.twitch.tv` prefix. Ignore
-  messages whose channel does not match the joined channel.
+- Parse CRLF-delimited IRC messages. Count by Twitch **username**: use the
+  lowercase login from the `:login!login@login.tmi.twitch.tv` prefix. Tags are
+  requested for `NOTICE` handling, but `user-id` is not used for deduplication.
+  Ignore messages whose channel does not match the joined channel.
 - A connection counts as successful when the server confirms the join with the
   `366` (end of `/NAMES`) reply for the requested channel. `JOIN` alone is not
   enough. If the socket opens but no `366` arrives within 10 seconds, close and
@@ -101,11 +102,14 @@ to make the final pick. Voting is advisory: chat never advances the bracket.
 - A message counts only when:
   - the match screen is visible and a poll exists;
   - it is a `PRIVMSG` from the joined channel;
-  - its first whitespace-delimited token is exactly `!1` or `!2`
-    (case-insensitive). Trailing text is ignored; `!12`, `1`, and other text do
-    not count.
-- One ballot per Twitch user, keyed by `user-id` (login fallback). A later vote
-  replaces the earlier one. Repeating the same vote changes nothing.
+  - its **first two characters** are `!1` or `!2`. Anything after those two
+    characters is ignored, so `!1`, `!1please`, `!12`, and `!2 let's go` all
+    count. A message that does not start with those exact two characters —
+    `1`, `vote !1`, ` !1`, or `!3` — does not count. Leading whitespace is not
+    trimmed: the message must start with the command.
+- One ballot per Twitch **username** (login, lowercased so casing cannot create
+  a duplicate). A later vote replaces the earlier one. Repeating the same vote
+  changes nothing.
 - The streamer's own chat messages count like anyone else's; no bot filtering.
 - Counts are derived from ballots: `a`, `b`, `total`, and percentages. With no
   votes both counts are `0` and both bars are empty. Percentages are rounded so
@@ -179,11 +183,12 @@ Pure/socket adapter, no DOM:
 - `parseIrcMessage(line)` → `{ tags, prefix, command, params, trailing }` or
   `null` for a keepalive/blank line.
 - `parseTags(raw)` → plain object.
-- `parseVoteCommand(text)` → `'a'`, `'b'`, or `null`.
+- `parseVoteCommand(text)` → `'a'`, `'b'`, or `null`, based only on the first
+  two characters.
 - `createChatConnection({ channel, onPrivmsg, onStatus, WebSocketImpl })` →
   `{ connect, disconnect }`. `WebSocketImpl` is injectable for tests. The
-  callback receives `{ userId, login, displayName, text }` only for valid
-  `PRIVMSG` lines in the joined channel.
+  callback receives `{ username, text }` only for valid `PRIVMSG` lines in the
+  joined channel, where `username` is the lowercased login.
 
 ### `src/voting.js`
 
@@ -216,17 +221,18 @@ New `test/twitch.test.js`:
   characters, too-long names.
 - Tag parsing, including empty values and quoted/escaped values as needed.
 - IRC parsing of tagged and untagged `PRIVMSG`, `PING`, and unknown commands.
-- Vote extraction: `!1`, `!2`, `!1 please`, whitespace, uppercase, `!12`,
-  `1`, `vote !1`, empty.
+- Vote extraction by first two characters: `!1`, `!2`, `!1 please`, `!2 let's
+  go`, `!1please`, and `!12` count; `1`, `vote !1`, ` !1`, `!3`, and empty do
+  not.
 - Connection with a fake `WebSocketImpl`: sends CAP/NICK/JOIN, replies to PING,
   filters other channels, marks connected on `366`, reconnects after close,
   retries a join timeout, and stops after disconnect.
 
 New `test/voting.test.js`:
 
-- One ballot per user; latest vote replaces; same vote is idempotent.
+- One ballot per username; latest vote replaces; same vote is idempotent.
 - Counts and percentages for 0 votes, one-sided votes, ties, and odd totals.
-- Invalid side, missing user id, and clear.
+- Invalid side, missing username, and clear.
 
 Manual verification:
 
@@ -248,8 +254,9 @@ advisory rule, and the anonymous-connection caveat. Add a short section to
 - **Anonymous IRC changes or is blocked.** The adapter is isolated in
   `src/twitch.js`; the UI only depends on its small interface. A relay can
   replace it without touching tournament or voting logic.
-- **Chat spam / high volume.** Ballots are one per user, updates are throttled,
-  and message parsing ignores oversized lines. No chat text is stored.
+- **Chat spam / high volume.** Ballots are one per username, updates are
+  throttled, and message parsing ignores oversized lines. No chat text is
+  stored.
 - **Stale votes during a transition.** The poll is replaced synchronously with
   the new matchup; anything arriving after the render belongs to the new duel.
 - **Twitch ToS / rate limits.** Read-only, no sending, one socket per tab.
