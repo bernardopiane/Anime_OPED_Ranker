@@ -61,6 +61,7 @@
           <div class="actions">
             <button id="start-btn" class="primary">Start</button>
             <button id="resume-btn" class="primary hidden">Resume</button>
+            <button id="lists-btn" type="button">Lists</button>
             <button id="reset-btn">Reset</button>
           </div>
         </div>
@@ -166,7 +167,100 @@
           <button id="again-btn" class="primary">Play again</button>
         </div>
       </section>
+
+      <section id="lists-screen" class="screen hidden">
+        <header class="lists-head">
+          <p class="kicker">Your library</p>
+          <h1>Lists</h1>
+          <p class="lede">Build a YouTube ranking list, reuse it, or share it as one code.</p>
+        </header>
+
+        <div id="library-view" class="lists-panel">
+          <div class="lists-toolbar">
+            <button id="lists-back-btn" type="button">Back</button>
+            <div class="lists-toolbar-actions">
+              <button id="new-list-btn" type="button">New list</button>
+              <button id="import-list-btn" type="button">Import code</button>
+            </div>
+          </div>
+          <ul id="library-list" class="library-list" aria-label="Your lists"></ul>
+        </div>
+
+        <div id="editor-view" class="lists-panel hidden">
+          <div class="lists-toolbar">
+            <button id="editor-back-btn" type="button">Back to library</button>
+            <div class="lists-toolbar-actions">
+              <button id="duplicate-list-btn" type="button" class="hidden">Duplicate to edit</button>
+              <span id="editor-count" class="list-count"></span>
+            </div>
+          </div>
+
+          <label class="field list-name-field">
+            <span>List name</span>
+            <input id="list-name" type="text" maxlength="80" autocomplete="off" />
+          </label>
+
+          <form id="add-item-form" class="add-item-form">
+            <label class="field">
+              <span>YouTube link</span>
+              <input
+                id="add-item-url"
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=…"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </label>
+            <label class="field">
+              <span>Title <span class="field-hint">optional</span></span>
+              <input
+                id="add-item-title"
+                type="text"
+                maxlength="200"
+                placeholder="Fetched from YouTube"
+                autocomplete="off"
+              />
+            </label>
+            <div class="actions">
+              <button id="add-item-btn" class="primary" type="submit">Add video</button>
+            </div>
+          </form>
+
+          <p id="editor-status" class="status-line" role="status" aria-live="polite"></p>
+          <ol id="editor-items" class="editor-items"></ol>
+        </div>
+      </section>
     </main>
+    <div id="share-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="share-title">
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2 id="share-title">Share or import a list</h2>
+          <button id="share-close" type="button">Close</button>
+        </div>
+        <section id="share-out" class="share-block">
+          <p id="share-note" class="modal-note">Copy this code and send it to anyone.</p>
+          <label class="field">
+            <span>Share code</span>
+            <textarea id="share-code" rows="4" readonly></textarea>
+          </label>
+          <div class="actions">
+            <button id="share-copy-btn" type="button">Copy code</button>
+          </div>
+        </section>
+        <section class="share-block">
+          <p class="modal-note">Paste a code to add that list to your library.</p>
+          <label class="field">
+            <span>Import code</span>
+            <textarea id="share-import-code" rows="4" placeholder="oped1:…" spellcheck="false"></textarea>
+          </label>
+          <div class="actions">
+            <button id="share-import-btn" type="button" class="primary">Import list</button>
+          </div>
+        </section>
+        <p id="share-status" class="status-line" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
     <div id="preview-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="preview-title">
       <div class="modal-card">
         <div class="modal-head">
