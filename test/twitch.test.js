@@ -68,3 +68,97 @@ test('parseVoteCommand checks only the first two characters', () => {
     assert.equal(parseVoteCommand(value), null, String(value));
   }
 });
+
+import { createChatConnection } from '../src/twitch.js';
+
+class FakeSocket {
+  static instances = [];
+  constructor(url) {
+    this.url = url;
+    this.sent = [];
+    this.closed = false;
+    FakeSocket.instances.push(this);
+  }
+  send(data) { this.sent.push(data); }
+  close() { this.closed = true; this.onclose?.(); }
+}
+
+function makeConnection(overrides = {}) {
+  FakeSocket.instances = [];
+  const statuses = [];
+  const messages = [];
+  const timeouts = [];
+  const connection = createChatConnection({
+    channel: 'chan',
+    onPrivmsg: (m) => messages.push(m),
+    onStatus: (s) => statuses.push(s),
+    WebSocketImpl: FakeSocket,
+    setTimeoutImpl: (fn, ms) => { const id = { fn, ms }; timeouts.push(id); return id; },
+    clearTimeoutImpl: (id) => { const i = timeouts.indexOf(id); if (i >= 0) timeouts.splice(i, 1); },
+    ...overrides,
+  });
+  return { connection, statuses, messages, timeouts };
+}
+
+function join(socket) {
+  socket.onopen?.();
+  socket.onmessage?.({ data: ':tmi.twitch.tv 366 justinfan123 #chan :End of /NAMES list\r\n' });
+}
+
+test('connection sends CAP, NICK, and JOIN and reports connected on 366', () => {
+  const { connection, statuses } = makeConnection();
+  connection.connect();
+  const socket = FakeSocket.instances[0];
+  assert.equal(socket.url, 'wss://irc-ws.chat.twitch.tv:443');
+  socket.onopen?.();
+  assert.ok(socket.sent.some((line) => line.startsWith('CAP REQ')));
+  assert.ok(socket.sent.some((line) => line.startsWith('NICK justinfan')));
+  assert.ok(socket.sent.includes('JOIN #chan\r\n'));
+  socket.onmessage?.({ data: ':tmi.twitch.tv 366 justinfan123 #chan :End of /NAMES list\r\n' });
+  assert.equal(statuses.at(-1).state, 'connected');
+  connection.disconnect();
+});
+
+test('connection answers PING and forwards matching PRIVMSG only', () => {
+  const { connection, messages } = makeConnection();
+  connection.connect();
+  const socket = FakeSocket.instances[0];
+  join(socket);
+  socket.onmessage?.({ data: 'PING :tmi.twitch.tv\r\n' });
+  assert.ok(socket.sent.includes('PONG :tmi.twitch.tv\r\n'));
+  socket.onmessage?.({ data: ':Alice!alice@alice.tmi.twitch.tv PRIVMSG #other :!1\r\n' });
+  socket.onmessage?.({ data: ':Alice!alice@alice.tmi.twitch.tv PRIVMSG #chan :!2 yes\r\n' });
+  assert.deepEqual(messages, [{ username: 'alice', text: '!2 yes' }]);
+  connection.disconnect();
+});
+
+test('connection reconnects after a close and stops after disconnect', () => {
+  const { connection, statuses, timeouts } = makeConnection();
+  connection.connect();
+  const first = FakeSocket.instances[0];
+  first.onclose?.();
+  assert.equal(statuses.at(-1).state, 'reconnecting');
+  assert.equal(statuses.at(-1).delay, 1000);
+  const retry = timeouts.find((t) => t.ms === 1000);
+  retry.fn();
+  assert.equal(FakeSocket.instances.length, 2);
+  connection.disconnect();
+  assert.equal(FakeSocket.instances[1].closed, true);
+  const before = statuses.length;
+  FakeSocket.instances[1].onclose?.();
+  assert.equal(statuses.length, before);
+});
+
+test('connection retries when the join confirmation never arrives', () => {
+  const { connection, statuses, timeouts } = makeConnection();
+  connection.connect();
+  const socket = FakeSocket.instances[0];
+  socket.onopen?.();
+  const joinTimer = timeouts.find((t) => t.ms === 10000);
+  assert.ok(joinTimer);
+  joinTimer.fn();
+  assert.equal(socket.closed, true);
+  assert.equal(statuses.at(-1).state, 'reconnecting');
+  connection.disconnect();
+});
+
