@@ -12,6 +12,7 @@ import {
   hydrateVideoCache,
 } from './src/cache.js';
 import { podiumEntries } from './src/podium.js';
+import { normalizeChannel, createChatConnection } from './src/twitch.js';
 import {
   createPlaylistBookmarklet,
   normalizePlaylistItems,
@@ -268,7 +269,82 @@ async function init() {
     persist();
   });
 
+  initTwitch();
   showScreen('start');
+}
+
+function setChatStatus(message, isError) {
+  const node = el('twitch-status');
+  node.textContent = message;
+  node.classList.toggle('is-error', Boolean(isError));
+}
+
+function setChatControls(active) {
+  el('twitch-connect-btn').textContent = active ? 'Disconnect' : 'Connect';
+  el('twitch-channel').disabled = active;
+}
+
+function handleChatStatus(status) {
+  chatState = status.state;
+  if (status.state === 'connected') {
+    chatChannel = status.channel;
+    saveChatChannel(status.channel);
+  }
+
+  const active =
+    status.state === 'connecting' ||
+    status.state === 'connected' ||
+    status.state === 'reconnecting';
+  setChatControls(active);
+
+  if (status.state === 'connecting') {
+    setChatStatus('Connecting…');
+  } else if (status.state === 'connected') {
+    setChatStatus(`Connected to #${status.channel}`);
+  } else if (status.state === 'reconnecting') {
+    const seconds = Math.max(1, Math.round((status.delay ?? 0) / 1000));
+    const retry = (status.attempt ?? 0) >= 3 ? ' Still trying — check the channel name.' : '';
+    setChatStatus(`Reconnecting in ${seconds}s…${retry}`);
+  } else if (status.state === 'error') {
+    setChatStatus(status.message || 'Connection failed.', true);
+    chat = null;
+  } else {
+    setChatStatus('Not connected');
+  }
+}
+
+function toggleChat() {
+  if (chat) {
+    chat.disconnect();
+    chat = null;
+    return;
+  }
+
+  const input = el('twitch-channel');
+  const channel = normalizeChannel(input.value);
+  if (!channel) {
+    setChatStatus('Enter a valid Twitch channel name.', true);
+    return;
+  }
+
+  input.value = channel;
+  saveChatChannel(channel);
+  chat = createChatConnection({ channel, onStatus: handleChatStatus });
+  chat.connect();
+}
+
+function initTwitch() {
+  if (!el('twitch-channel')) return;
+
+  const saved = savedChatChannel();
+  if (saved) el('twitch-channel').value = saved;
+
+  el('twitch-connect-btn').addEventListener('click', toggleChat);
+  el('twitch-channel').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    toggleChat();
+  });
 }
 
 const resolved = new Map();
@@ -281,6 +357,25 @@ const media = {
 let activeSide = null;
 let lockedSide = null;
 let masterVolume = 1;
+
+const CHAT_CHANNEL_KEY = 'oped-twitch-channel';
+let chat = null;
+let chatState = 'idle';
+let chatChannel = '';
+
+function savedChatChannel() {
+  try {
+    return normalizeChannel(localStorage.getItem(CHAT_CHANNEL_KEY));
+  } catch {
+    return null;
+  }
+}
+
+function saveChatChannel(channel) {
+  try {
+    if (channel) localStorage.setItem(CHAT_CHANNEL_KEY, channel);
+  } catch {}
+}
 
 function applyAudio() {
   for (const side of ['a', 'b']) {

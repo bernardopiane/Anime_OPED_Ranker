@@ -64,6 +64,20 @@
             <button id="reset-btn">Reset</button>
           </div>
         </div>
+        <section class="twitch-card" aria-labelledby="twitch-title">
+          <p id="twitch-title" class="twitch-title">Twitch chat voting</p>
+          <div class="twitch-row">
+            <label class="twitch-field">
+              <span class="sr-only">Twitch channel</span>
+              <input id="twitch-channel" type="text" placeholder="your_channel" autocomplete="off" spellcheck="false" />
+            </label>
+            <button id="twitch-connect-btn" type="button">Connect</button>
+          </div>
+          <p id="twitch-status" class="twitch-status" role="status" aria-live="polite">Not connected</p>
+          <p class="twitch-help">
+            Chat votes with <code>!1</code> for the left and <code>!2</code> for the right. You always make the final pick.
+          </p>
+        </section>
         <details id="playlist-tool" class="playlist-tool">
           <summary>Turn a YouTube playlist into a CSV</summary>
           <div class="playlist-body">
