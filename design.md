@@ -160,6 +160,44 @@ The payoff diverges from the duel on purpose. It is its own contained world:
   all carry the gold `--color-champion` treatment.
 - Theme chip swaps sun/moon icon per active theme.
 
+## Twitch chat voting
+
+An optional audience layer that never changes the duel's hierarchy: the Pick button
+stays the loudest thing on screen.
+
+- **Start card:** a compact **Twitch chat voting** card below the start card's
+  controls, on `--color-paper-2` with `--color-rule`, `--radius-lg`, and the shared
+  card shadow. A pill input (`your_channel`) sits beside the **Connect** button, which
+  becomes **Disconnect** while active. The status line is a polite live region with
+  five states: **Not connected**, **Connecting…**, **Connected to #name**,
+  **Reconnecting in Ns…** (with "still trying" after repeated failures), and a
+  terminal error in `--color-danger`. While active the input is disabled.
+- **HUD chat chip:** a mono, pill-shaped `--color-paper-2` chip that reads **Chat
+  off** at rest, **#channel** with an `--color-accent` live dot when connected,
+  **Connecting… / Reconnecting…** in the muted tone otherwise, and **Chat error** in
+  `--color-danger`. Its dot is a pseudo-element, so the text is the only content.
+- **Vote meter:** inside each panel, under the head row and above the media. A
+  `--team-soft` surface with a `--team` border and `--radius-sm`, showing the count in
+  mono `--team-strong` tabular figures, a small **votes** unit, the percentage in
+  `--color-ink-soft`, and a 4px pill fill bar in `--team` that animates width with
+  `--dur-short` / `--ease-out`. Meters are hidden when chat is off.
+- **VS total:** the split-ring medallion stays decorative and `aria-hidden`; the total
+  ("N votes") sits beneath it as mono `--text-xs` in `--color-muted`, outside the
+  `aria-hidden` medallion so it is readable.
+- **Clear votes:** an outlined chip in the match actions, shown only while chat is
+  active, resetting the current poll without touching tournament progress.
+- **Advisory rule:** votes are colour and information only. Pick A / Pick B remain the
+  sole winner control, so the team-filled Pick pill always outranks the meter. Meter
+  and VS never use the champion gold.
+- **Copy:** a one-line hint — "Chat votes with `!1` for the left and `!2` for the
+  right. You always make the final pick." — in `--color-muted`, with `!1` / `!2` set
+  in mono on a `--color-paper-3` chip.
+- **Tokens only:** `--team*` via the panel remap, `--color-rule`, `--color-muted`,
+  `--color-ink-soft`, `--color-paper-2/3`, `--color-danger`, `--font-mono`,
+  `--radius-sm/pill`, and the existing radii. No new colours or fonts.
+- **Motion:** only the fill bar transitions; it is disabled under
+  `prefers-reduced-motion: reduce` along with the rest.
+
 ## Keyboard & assistive tech
 
 - `←` / `→` pick A / B; `U` toggles mute on side A; `Esc` closes the preview dialog.
@@ -168,19 +206,22 @@ The payoff diverges from the duel on purpose. It is its own contained world:
 - The preview is a `role="dialog"` `aria-modal` with a Tab focus trap and focus
   restored to the trigger on close.
 - A `role="status"` `aria-live="polite"` region announces each new round and matchup.
+- Each vote meter carries an `aria-label` with its side, vote count, and percentage;
+  the chat status line and HUD chip are polite live regions.
 
 ## CTA voice
 
 - **Primary** (Start / Resume): filled accent pill, `--color-accent-ink` text. On the
   Results screen, **Play again** is the filled gold `--color-champion` primary.
 - **Pick A / Pick B:** filled team pill, full width, at the panel foot.
-- **Secondary** (Reset, Copy, Download, Undo, Preview, Pause): outlined chip.
+- **Secondary** (Reset, Copy, Download, Undo, Preview, Pause, Clear votes): outlined chip.
 
 ## Copy
 
 Honest, warm, dry-humoured. No invented metrics, no hype. Examples: "Rank every opening
 and ending, one duel at a time." · "Everything you ranked, best first." ·
-"Built for the eternal rewatch — rank the bangers, settle the debates."
+"Built for the eternal rewatch — rank the bangers, settle the debates." ·
+"Chat votes with `!1` for the left and `!2` for the right. You always make the final pick."
 
 ## Constraints carried forward
 

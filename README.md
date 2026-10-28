@@ -22,6 +22,8 @@ entirely in your browser as a static site: vanilla JavaScript, zero dependencies
 - **Bring your own list** — load any `title,link` CSV file.
 - **Export** the final ranking as numbered text or a CSV download.
 - **Fail-safe previews** — automatic retries with backoff and a per-preview Retry button.
+- **Live Twitch chat voting** — chatters vote `!1` / `!2` on the current duel and the
+  totals update in place, while you keep the final pick.
 
 ## Quick start
 
@@ -79,6 +81,33 @@ On the start screen, **Load your own CSV** lets you pick a local file that
 follows the same format. Reordering or editing rows is fine. The loaded list is
 saved so that Resume keeps working; **Reset** returns to the bundled list.
 
+## Live Twitch chat voting
+
+Run the ranking with an audience. On the start screen, type your Twitch channel
+name and press **Connect** — the app joins that channel's chat read-only and
+anonymous, with no login, token, or backend. The channel is remembered for next
+time.
+
+While a duel is on screen, chatters vote in chat:
+
+- `!1` votes for the left entry, `!2` for the right.
+- The message must **start** with `!1` or `!2`; trailing text is fine (`!1please`
+  works). A leading space means the vote is ignored.
+- One ballot per Twitch username — voting again replaces that user's earlier
+  vote, so the latest vote wins.
+
+Each panel shows the live count, percentage, and a team-coloured fill bar; the
+`VS` badge shows the total. **Clear votes** resets the current poll.
+
+Votes are **advisory only**. Only your **Pick A** / **Pick B** buttons (or `←` /
+`→`) record a winner, and you can pick either side regardless of the vote. Votes
+reset for every new duel and are not saved, so they never appear in a ranking or
+survive a reload.
+
+The connection is anonymous and read-only: the app only reads public chat, never
+posts, and sees no account data. It needs network access, so it is the one
+feature that is not fully offline.
+
 ## How the ranking works
 
 Entries are ranked with a merge sort whose comparison function is *you* — when
@@ -130,6 +159,8 @@ src/
   resolve.js          Resolve a link to a playable video (with retries)
   cache.js            URL-keyed preview cache + source fingerprints
   storage.js          localStorage wrapper (never throws)
+  twitch.js           Twitch IRC read-only chat adapter and vote parsing
+  voting.js           Per-duel poll and username-keyed vote tally
 test/                 Node test suites
 ```
 
@@ -169,5 +200,8 @@ All platforms will serve the site over HTTPS, which is required for ES modules a
 ## Notes
 
 - Everything runs client-side; there is no backend and no build step.
-- Network access is needed only to resolve and play previews.
+- Network access is needed only to resolve and play previews, and to read Twitch chat
+  when chat voting is connected.
+- Twitch chat is joined anonymously over a read-only WebSocket; no OAuth, token, or
+  chat-writing permission is involved.
 - The app requires HTTPS or HTTP (not file://) to function properly due to ES module restrictions.
