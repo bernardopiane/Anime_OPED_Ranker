@@ -325,12 +325,15 @@ function renderVotesNow() {
     const sideCount = side === 'a' ? counts.a : counts.b;
     const percent = side === 'a' ? counts.percentA : counts.percentB;
     const countNode = meter.querySelector('.vote-count');
+    const unitNode = meter.querySelector('.vote-unit');
     const percentNode = meter.querySelector('.vote-percent');
     const fill = meter.querySelector('.vote-fill');
     if (countNode) countNode.textContent = String(sideCount);
+    if (unitNode) unitNode.textContent = sideCount === 1 ? 'vote' : 'votes';
     if (percentNode) percentNode.textContent = `${percent}%`;
     if (fill) fill.style.width = `${percent}%`;
-    meter.setAttribute('aria-label', `${side === 'a' ? 'A' : 'B'}: ${sideCount} votes, ${percent}%`);
+    const unit = sideCount === 1 ? 'vote' : 'votes';
+    meter.setAttribute('aria-label', `${side === 'a' ? 'A' : 'B'}: ${sideCount} ${unit}, ${percent}%`);
   }
 }
 
