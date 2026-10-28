@@ -12,7 +12,8 @@ import {
   hydrateVideoCache,
 } from './src/cache.js';
 import { podiumEntries } from './src/podium.js';
-import { normalizeChannel, createChatConnection } from './src/twitch.js';
+import { normalizeChannel, createChatConnection, parseVoteCommand } from './src/twitch.js';
+import { createPoll, castVote, tally, clearPoll } from './src/voting.js';
 import {
   createPlaylistBookmarklet,
   normalizePlaylistItems,
@@ -142,6 +143,7 @@ function updateSourceLabel() {
 }
 
 function useItems(items, sourceName) {
+  discardPoll();
   state.items = items;
   state.customSource = true;
   state.sourceName = sourceName;
@@ -209,6 +211,7 @@ async function init() {
 
   el('reset-btn').addEventListener('click', async () => {
     if (!confirm('Clear all progress and load the default list?')) return;
+    discardPoll();
     clear();
     resolved.clear();
     resolving.clear();
@@ -246,12 +249,20 @@ async function init() {
   });
 
   el('undo-btn').addEventListener('click', () => {
+    discardPoll();
     state.tournament.winners = state.tournament.winners.slice(0, -1);
     persist();
     renderMatch();
   });
 
+  el('clear-votes-btn').addEventListener('click', () => {
+    if (!chatPoll) return;
+    chatPoll = clearPoll(chatPoll);
+    renderVotesNow();
+  });
+
   el('pause-btn').addEventListener('click', () => {
+    discardPoll();
     persist();
     cleanupMedia('a');
     cleanupMedia('b');
@@ -284,6 +295,88 @@ function setChatControls(active) {
   el('twitch-channel').disabled = active;
 }
 
+function chatActive() {
+  return chatState === 'connecting' || chatState === 'connected' || chatState === 'reconnecting';
+}
+
+function chatLive() {
+  return chatState === 'connected';
+}
+
+function discardPoll() {
+  chatPoll = null;
+  if (voteRenderTimer !== null) {
+    clearTimeout(voteRenderTimer);
+    voteRenderTimer = null;
+  }
+}
+
+function renderVotesNow() {
+  if (!chatPoll) return;
+  const counts = tally(chatPoll);
+
+  const vs = el('vs-votes');
+  if (vs) vs.textContent = counts.total === 1 ? '1 vote' : `${counts.total} votes`;
+
+  for (const side of ['a', 'b']) {
+    const panel = el(`panel-${side}`);
+    const meter = panel?.querySelector('.vote-meter');
+    if (!meter) continue;
+    const sideCount = side === 'a' ? counts.a : counts.b;
+    const percent = side === 'a' ? counts.percentA : counts.percentB;
+    const countNode = meter.querySelector('.vote-count');
+    const percentNode = meter.querySelector('.vote-percent');
+    const fill = meter.querySelector('.vote-fill');
+    if (countNode) countNode.textContent = String(sideCount);
+    if (percentNode) percentNode.textContent = `${percent}%`;
+    if (fill) fill.style.width = `${percent}%`;
+    meter.setAttribute('aria-label', `${side === 'a' ? 'A' : 'B'}: ${sideCount} votes, ${percent}%`);
+  }
+}
+
+function scheduleVoteRender() {
+  if (voteRenderTimer !== null) return;
+  renderVotesNow();
+  voteRenderTimer = setTimeout(() => {
+    voteRenderTimer = null;
+    renderVotesNow();
+  }, 100);
+}
+
+function updateVoteVisibility() {
+  const visible = chatActive();
+  for (const side of ['a', 'b']) {
+    const meter = el(`panel-${side}`)?.querySelector('.vote-meter');
+    if (meter) meter.classList.toggle('hidden', !visible);
+  }
+  const vs = el('vs-votes');
+  if (vs) vs.classList.toggle('hidden', !visible);
+  const clear = el('clear-votes-btn');
+  if (clear) clear.classList.toggle('hidden', !visible);
+}
+
+function handleChatMessage({ username, text }) {
+  if (!chatLive() || !chatPoll) return;
+  if (el('match-screen').classList.contains('hidden')) return;
+  const side = parseVoteCommand(text);
+  if (!side) return;
+  chatPoll = castVote(chatPoll, username, side);
+  scheduleVoteRender();
+}
+
+function setChatChip(status) {
+  const chip = el('chat-status');
+  if (!chip) return;
+  let text = 'Chat off';
+  if (status.state === 'connected') text = `#${status.channel}`;
+  else if (status.state === 'connecting') text = 'Connecting…';
+  else if (status.state === 'reconnecting') text = 'Reconnecting…';
+  else if (status.state === 'error') text = 'Chat error';
+  chip.textContent = text;
+  chip.classList.toggle('is-live', status.state === 'connected');
+  chip.classList.toggle('is-error', status.state === 'error');
+}
+
 function handleChatStatus(status) {
   chatState = status.state;
   if (status.state === 'connected') {
@@ -296,6 +389,7 @@ function handleChatStatus(status) {
     status.state === 'connected' ||
     status.state === 'reconnecting';
   setChatControls(active);
+  setChatChip(status);
 
   if (status.state === 'connecting') {
     setChatStatus('Connecting…');
@@ -311,6 +405,8 @@ function handleChatStatus(status) {
   } else {
     setChatStatus('Not connected');
   }
+
+  updateVoteVisibility();
 }
 
 function toggleChat() {
@@ -329,7 +425,11 @@ function toggleChat() {
 
   input.value = channel;
   saveChatChannel(channel);
-  chat = createChatConnection({ channel, onStatus: handleChatStatus });
+  chat = createChatConnection({
+    channel,
+    onStatus: handleChatStatus,
+    onPrivmsg: handleChatMessage,
+  });
   chat.connect();
 }
 
@@ -362,6 +462,8 @@ const CHAT_CHANNEL_KEY = 'oped-twitch-channel';
 let chat = null;
 let chatState = 'idle';
 let chatChannel = '';
+let chatPoll = null;
+let voteRenderTimer = null;
 
 function savedChatChannel() {
   try {
@@ -588,6 +690,27 @@ function renderPanel(side, item, animate = false) {
   head.append(title, cap);
   panel.appendChild(head);
 
+  const meter = document.createElement('div');
+  meter.className = 'vote-meter hidden';
+  meter.setAttribute('aria-label', `${side === 'a' ? 'A' : 'B'}: 0 votes, 0%`);
+
+  const voteCount = document.createElement('span');
+  voteCount.className = 'vote-count';
+  voteCount.textContent = '0';
+  const voteUnit = document.createElement('span');
+  voteUnit.className = 'vote-unit';
+  voteUnit.textContent = 'votes';
+  const votePercent = document.createElement('span');
+  votePercent.className = 'vote-percent';
+  votePercent.textContent = '0%';
+  const voteBar = document.createElement('span');
+  voteBar.className = 'vote-bar';
+  const voteFill = document.createElement('span');
+  voteFill.className = 'vote-fill';
+  voteBar.appendChild(voteFill);
+  meter.append(voteCount, voteUnit, votePercent, voteBar);
+  panel.appendChild(meter);
+
   const controls = document.createElement('div');
   controls.className = 'controls';
 
@@ -750,6 +873,7 @@ function pick(side) {
   const id = Number(panel.dataset.id);
   const matchup = nextMatchup(state.tournament);
   if (!matchup || (id !== matchup.a && id !== matchup.b)) return;
+  discardPoll();
   state.tournament = recordWinner(state.tournament, id);
   persist();
   if (isComplete(state.tournament)) renderResults();
@@ -784,6 +908,10 @@ function renderMatch() {
   const prevB = el('panel-b').dataset.id;
   renderPanel('a', a, prevA !== undefined && prevA !== String(a.id));
   renderPanel('b', b, prevB !== undefined && prevB !== String(b.id));
+
+  chatPoll = createPoll(`${state.tournament.winners.length}:${matchup.a}:${matchup.b}`);
+  renderVotesNow();
+  updateVoteVisibility();
 
   const progress = getProgress(state.tournament);
   el('progress-label').textContent = `Round ${progress.round} of ${progress.totalRounds}`;
@@ -947,6 +1075,7 @@ function renderPodium(items) {
 }
 
 function renderResults() {
+  discardPoll();
   cleanupMedia('a');
   cleanupMedia('b');
   activeSide = null;
@@ -991,6 +1120,7 @@ el('download-btn').addEventListener('click', () => {
 
 el('again-btn').addEventListener('click', () => {
   if (!confirm('Clear progress and start over?')) return;
+  discardPoll();
   state.tournament = createTournament(state.items.map((i) => i.id));
   persist();
   updateResumeButton(null);

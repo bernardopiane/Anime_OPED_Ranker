@@ -116,15 +116,20 @@
             <div id="round-ladder" class="ladder" aria-hidden="true"></div>
           </div>
           <span id="match-status" class="sr-only" role="status" aria-live="polite"></span>
+          <p id="chat-status" class="chat-status" role="status" aria-live="polite">Chat off</p>
         </header>
         <div id="panels">
           <div id="panel-a" class="panel panel--a" role="group"></div>
-          <div class="vs-badge" aria-hidden="true"><span>VS</span></div>
+          <div class="vs-badge">
+            <span class="vs-medallion" aria-hidden="true">VS</span>
+            <span id="vs-votes" class="vs-votes hidden"></span>
+          </div>
           <div id="panel-b" class="panel panel--b" role="group"></div>
         </div>
         <footer class="match-footer">
           <div class="match-actions">
             <button id="undo-btn">Undo</button>
+            <button id="clear-votes-btn" class="hidden">Clear votes</button>
             <button id="preview-btn">Preview ranking</button>
             <button id="pause-btn">Pause &amp; exit</button>
           </div>
