@@ -1,16 +1,32 @@
 import { parseCsv } from './src/csv.js';
 import { createTournament, nextMatchup, recordWinner, getProgress, isComplete, getRanking, getCurrentRanking, shuffleIds } from './src/tournament.js';
-import { fetchVideoForItem } from './src/resolve.js';
-import { save, load, clear } from './src/storage.js';
+import { fetchVideoForItem, parseYouTubeUrl } from './src/resolve.js';
+import { save, load, loadRaw, saveBackup } from './src/storage.js';
 import {
   RECORD_VERSION,
   sourceFingerprint,
-  isMatchingSource,
-  cacheEntries,
-  hydrateEntries,
   videoCacheEntries,
   hydrateVideoCache,
 } from './src/cache.js';
+import {
+  STARTER_ID,
+  MAX_ITEMS,
+  sanitizeTitle,
+  uniqueName,
+  createList,
+  starterList,
+  addItem,
+  removeItem,
+  moveItem,
+  updateItemTitle,
+  updateItemUrl,
+  renameList,
+  sameStructure,
+  isResumableRecord,
+  normalizeRecord,
+} from './src/lists.js';
+import { encodeList, decodeList } from './src/share.js';
+import { normalizeYouTubeUrl, fetchVideoTitle } from './src/youtube.js';
 import { podiumEntries } from './src/podium.js';
 import { normalizeChannel, createChatConnection, parseVoteCommand } from './src/twitch.js';
 import { createPoll, castVote, tally, clearPoll } from './src/voting.js';
@@ -27,14 +43,17 @@ const CSV_URL = 'opening%20list.csv';
 const state = {
   items: [],
   tournament: null,
-  customSource: false,
-  sourceName: '',
+  starter: starterList([]),
+  lists: [],
+  activeListId: STARTER_ID,
+  videos: {},
+  editingId: STARTER_ID,
 };
 
 const el = (id) => document.getElementById(id);
 
 function showScreen(name) {
-  for (const screen of ['start', 'match', 'results']) {
+  for (const screen of ['start', 'match', 'results', 'lists']) {
     el(`${screen}-screen`).classList.toggle('hidden', screen !== name);
   }
 }
@@ -60,20 +79,17 @@ function initTheme() {
 }
 
 function persist() {
+  state.videos = { ...state.videos, ...videoCacheEntries(resolved, state.items) };
   const record = {
-    fingerprint: sourceFingerprint(state.items),
-    ids: state.tournament.ids,
-    winners: state.tournament.winners,
-    resolved: cacheEntries(resolved),
-    videos: videoCacheEntries(resolved, state.items),
     version: RECORD_VERSION,
+    activeListId: state.activeListId,
+    lists: state.lists,
+    fingerprint: sourceFingerprint(state.items),
+    ids: state.tournament ? state.tournament.ids : [],
+    winners: state.tournament ? state.tournament.winners : [],
+    videos: state.videos,
     volume: masterVolume,
-    custom: state.customSource,
   };
-  if (state.customSource) {
-    record.items = state.items;
-    record.sourceName = state.sourceName;
-  }
   const ok = save(record);
   el('warning').classList.toggle('hidden', ok);
 }
@@ -102,30 +118,33 @@ function idsOf(items) {
   return items.map((i) => i.id);
 }
 
-function isIdPermutation(candidate, ids) {
-  if (!Array.isArray(candidate) || candidate.length !== ids.length) return false;
-  const expected = new Set(ids);
-  if (expected.size !== ids.length) return false;
-  return candidate.every((id) => expected.has(id));
+function findList(id) {
+  if (id === STARTER_ID) return state.starter;
+  return state.lists.find((list) => list.id === id) || null;
 }
 
-function isResumable(saved) {
-  if (!isMatchingSource(saved, state.items) || saved.version !== RECORD_VERSION) return false;
-  if (!Array.isArray(saved.winners) || saved.winners.length === 0) return false;
-  const ids = idsOf(state.items);
-  if (!isIdPermutation(saved.ids, ids)) return false;
-  if (saved.winners.some((winner) => !ids.includes(winner))) return false;
-  try {
-    getProgress({ ids: saved.ids, winners: saved.winners });
-    return true;
-  } catch {
-    return false;
-  }
+function activeList() {
+  return findList(state.activeListId) || state.starter;
 }
 
-function updateResumeButton(savedRecord = load()) {
+function listNames() {
+  return [state.starter.name, ...state.lists.map((list) => list.name)];
+}
+
+function hydrateResolved() {
+  resolutionEpoch += 1;
+  resolved.clear();
+  resolving.clear();
+  for (const [id, info] of hydrateVideoCache(state.videos, state.items)) resolved.set(id, info);
+}
+
+function runInProgress() {
+  return Boolean(state.tournament && state.tournament.winners.length > 0);
+}
+
+function updateResumeButton() {
   const resumeBtn = el('resume-btn');
-  if (isResumable(savedRecord)) {
+  if (runInProgress() && !isComplete(state.tournament)) {
     const { round, totalRounds } = getProgress(state.tournament);
     resumeBtn.textContent = `Resume — Round ${round} of ${totalRounds}`;
     resumeBtn.classList.remove('hidden');
@@ -137,65 +156,527 @@ function updateResumeButton(savedRecord = load()) {
 
 function updateSourceLabel() {
   const n = state.items.length;
-  el('status').textContent = state.customSource
-    ? `${n} openings loaded from ${state.sourceName}.`
-    : `${n} openings ready.`;
+  const noun = n === 1 ? 'opening' : 'openings';
+  el('status').textContent =
+    state.activeListId === STARTER_ID
+      ? `${n} ${noun} ready.`
+      : `${n} ${noun} loaded from ${activeList().name}.`;
 }
 
-function useItems(items, sourceName) {
+function resetTournament() {
   discardPoll();
-  state.items = items;
-  state.customSource = true;
-  state.sourceName = sourceName;
-  resolved.clear();
-  resolving.clear();
   cleanupMedia('a');
   cleanupMedia('b');
-  state.tournament = createTournament(idsOf(items));
+  activeSide = null;
+  lockedSide = null;
+  state.tournament = createTournament(idsOf(state.items));
+}
+
+function endRunForChange() {
+  if (!state.tournament) return;
+  if (state.tournament.winners.length > 0) {
+    alert('Changing this list ends the current ranking. The bracket will start fresh.');
+  }
+  resetTournament();
+}
+
+function activateList(id) {
+  const list = findList(id);
+  if (!list) return false;
+  if (id === state.activeListId) return true;
+  if (runInProgress()) {
+    alert(`Switching to “${list.name}” ends the current ranking. The new list starts fresh.`);
+  }
+  state.activeListId = list.id;
+  state.items = list.items;
+  hydrateResolved();
+  resetTournament();
   persist();
-  updateResumeButton(null);
+  updateResumeButton();
   updateSourceLabel();
+  renderLibrary();
+  return true;
+}
+
+function createAndActivate(items, name) {
+  const list = createList({ name: uniqueName(name, listNames()), items });
+  state.lists.push(list);
+  activateList(list.id);
   showScreen('start');
 }
 
+function applyListEdit(before, after) {
+  const index = state.lists.findIndex((list) => list.id === after.id);
+  if (index === -1) return false;
+  const structural = !sameStructure(before.items, after.items);
+  const active = after.id === state.activeListId;
+  state.lists[index] = after;
+  if (active) {
+    state.items = after.items;
+    if (structural) {
+      endRunForChange();
+      hydrateResolved();
+      updateResumeButton();
+    }
+    updateSourceLabel();
+  }
+  persist();
+  return true;
+}
+
+function uiButton(label, onClick, className) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = label;
+  if (className) btn.className = className;
+  btn.addEventListener('click', onClick);
+  return btn;
+}
+
+function renderLibrary() {
+  const list = el('library-list');
+  if (!list) return;
+  list.innerHTML = '';
+  for (const entry of [state.starter, ...state.lists]) {
+    list.appendChild(libraryCard(entry));
+  }
+}
+
+function libraryCard(entry) {
+  const li = document.createElement('li');
+  li.className = 'list-card';
+  const isActive = entry.id === state.activeListId;
+  if (isActive) li.classList.add('is-active');
+
+  const head = document.createElement('div');
+  head.className = 'list-card-head';
+  const title = document.createElement('h2');
+  title.textContent = entry.name;
+  head.appendChild(title);
+
+  const badge = document.createElement('span');
+  if (isActive) {
+    badge.className = 'badge';
+    badge.textContent = 'Active';
+    head.appendChild(badge);
+  } else if (entry.id === STARTER_ID) {
+    badge.className = 'badge badge--muted';
+    badge.textContent = 'Starter';
+    head.appendChild(badge);
+  }
+  li.appendChild(head);
+
+  const meta = document.createElement('p');
+  meta.className = 'list-card-meta';
+  const count = entry.items.length;
+  meta.textContent = `${count} video${count === 1 ? '' : 's'}`;
+  li.appendChild(meta);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  if (!isActive) {
+    actions.appendChild(uiButton('Use', () => activateList(entry.id), 'primary'));
+  }
+  actions.appendChild(uiButton('Edit', () => openEditor(entry.id)));
+  actions.appendChild(uiButton('Share', () => openShare(entry.id)));
+  if (entry.id === STARTER_ID) {
+    actions.appendChild(uiButton('Duplicate to edit', () => duplicateList(entry.id)));
+  } else {
+    actions.appendChild(uiButton('Duplicate', () => duplicateList(entry.id)));
+    actions.appendChild(uiButton('Delete', () => deleteList(entry.id), 'danger'));
+  }
+  li.appendChild(actions);
+  return li;
+}
+
+function openLibrary() {
+  showScreen('lists');
+  el('editor-view').classList.add('hidden');
+  el('library-view').classList.remove('hidden');
+  renderLibrary();
+}
+
+function openEditor(id) {
+  const list = findList(id);
+  if (!list) return;
+  state.editingId = list.id;
+  showScreen('lists');
+  el('library-view').classList.add('hidden');
+  el('editor-view').classList.remove('hidden');
+  renderEditor();
+  el('list-name').focus();
+}
+
+function setEditorStatus(message, isError) {
+  const node = el('editor-status');
+  node.textContent = message;
+  node.classList.toggle('is-error', Boolean(isError));
+}
+
+function renderEditor() {
+  const list = findList(state.editingId);
+  if (!list) {
+    openLibrary();
+    return;
+  }
+  const readOnly = list.id === STARTER_ID;
+  const nameInput = el('list-name');
+  nameInput.value = list.name;
+  nameInput.disabled = readOnly;
+
+  const count = list.items.length;
+  el('editor-count').textContent = `${count} video${count === 1 ? '' : 's'}`;
+
+  const duplicateBtn = el('duplicate-list-btn');
+  duplicateBtn.classList.remove('hidden');
+  duplicateBtn.textContent = readOnly ? 'Duplicate to edit' : 'Duplicate';
+
+  el('add-item-form').classList.toggle('hidden', readOnly);
+  setEditorStatus(readOnly ? 'The starter list is read-only. Duplicate it to make changes.' : '');
+
+  const items = el('editor-items');
+  items.innerHTML = '';
+  list.items.forEach((item, index) => {
+    items.appendChild(editorRow(list, item, index, readOnly));
+  });
+}
+
+function editorRow(list, item, index, readOnly) {
+  const li = document.createElement('li');
+  li.className = 'editor-item';
+
+  const fields = document.createElement('div');
+  fields.className = 'editor-item-fields';
+
+  const titleLabel = document.createElement('label');
+  titleLabel.className = 'field';
+  const titleSpan = document.createElement('span');
+  titleSpan.textContent = 'Title';
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.maxLength = 200;
+  titleInput.value = item.title;
+  titleInput.disabled = readOnly;
+  titleInput.setAttribute('aria-label', `Title for video ${index + 1}`);
+  titleInput.addEventListener('change', () => {
+    const current = findList(list.id);
+    if (!current) return;
+    const next = updateItemTitle(current, item.id, titleInput.value);
+    if (!next) {
+      titleInput.value = item.title;
+      setEditorStatus('A title cannot be empty.', true);
+      return;
+    }
+    if (next === current) {
+      titleInput.value = item.title;
+      return;
+    }
+    applyListEdit(current, next);
+    titleInput.value = next.items[index].title;
+    setEditorStatus('Title saved.');
+  });
+  titleLabel.append(titleSpan, titleInput);
+
+  const urlLabel = document.createElement('label');
+  urlLabel.className = 'field';
+  const urlSpan = document.createElement('span');
+  urlSpan.textContent = 'YouTube link';
+  const urlInput = document.createElement('input');
+  urlInput.type = 'url';
+  urlInput.value = item.url;
+  urlInput.disabled = readOnly;
+  urlInput.spellcheck = false;
+  urlInput.setAttribute('aria-label', `Link for video ${index + 1}`);
+  urlInput.addEventListener('change', () => {
+    const current = findList(list.id);
+    if (!current) return;
+    const normalized = normalizeYouTubeUrl(urlInput.value);
+    if (!normalized) {
+      urlInput.value = item.url;
+      setEditorStatus('Enter a valid YouTube link.', true);
+      return;
+    }
+    const duplicate = current.items.some(
+      (entry) => entry.id !== item.id && entry.url === normalized,
+    );
+    if (duplicate) {
+      urlInput.value = item.url;
+      setEditorStatus('That video is already in this list.', true);
+      return;
+    }
+    const next = updateItemUrl(current, item.id, normalized);
+    if (!next || next === current) {
+      urlInput.value = item.url;
+      return;
+    }
+    const active = current.id === state.activeListId;
+    applyListEdit(current, next);
+    renderEditor();
+    setEditorStatus(active ? 'Link updated. The ranking was reset.' : 'Link updated.');
+  });
+  urlLabel.append(urlSpan, urlInput);
+
+  fields.append(titleLabel, urlLabel);
+
+  if (readOnly) {
+    li.appendChild(fields);
+    return li;
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'editor-item-actions';
+  const up = uiButton('Up', () => moveListItem(list.id, item.id, -1));
+  up.disabled = index === 0;
+  const down = uiButton('Down', () => moveListItem(list.id, item.id, 1));
+  down.disabled = index === list.items.length - 1;
+  const remove = uiButton('Remove', () => removeListItem(list.id, item.id), 'danger');
+  actions.append(up, down, remove);
+  li.append(fields, actions);
+  return li;
+}
+
+function moveListItem(listId, itemId, delta) {
+  const current = findList(listId);
+  if (!current) return;
+  const next = moveItem(current, itemId, delta);
+  if (!next) return;
+  applyListEdit(current, next);
+  renderEditor();
+  setEditorStatus('Order saved.');
+}
+
+function removeListItem(listId, itemId) {
+  const current = findList(listId);
+  if (!current) return;
+  const next = removeItem(current, itemId);
+  if (!next) return;
+  applyListEdit(current, next);
+  renderEditor();
+  setEditorStatus('Video removed.');
+}
+
+function duplicateList(id) {
+  const source = findList(id);
+  if (!source) return;
+  const copy = createList({ name: uniqueName(source.name, listNames()), items: source.items });
+  state.lists.push(copy);
+  persist();
+  openEditor(copy.id);
+}
+
+function deleteList(id) {
+  const list = findList(id);
+  if (!list || id === STARTER_ID) return;
+  if (!confirm(`Delete “${list.name}”? This cannot be undone.`)) return;
+  state.lists = state.lists.filter((entry) => entry.id !== id);
+  if (state.activeListId === id) {
+    state.activeListId = STARTER_ID;
+    state.items = state.starter.items;
+    hydrateResolved();
+    resetTournament();
+    updateResumeButton();
+    updateSourceLabel();
+  }
+  persist();
+  renderLibrary();
+}
+
+async function addListItem(event) {
+  event.preventDefault();
+  const list = findList(state.editingId);
+  if (!list || list.id === STARTER_ID) return;
+
+  const url = normalizeYouTubeUrl(el('add-item-url').value);
+  if (!url) {
+    setEditorStatus('Enter a valid YouTube link.', true);
+    return;
+  }
+  if (list.items.some((item) => item.url === url)) {
+    setEditorStatus('That video is already in this list.', true);
+    return;
+  }
+  if (list.items.length >= MAX_ITEMS) {
+    setEditorStatus(`A list holds at most ${MAX_ITEMS} videos.`, true);
+    return;
+  }
+
+  const typed = sanitizeTitle(el('add-item-title').value);
+  const button = el('add-item-btn');
+  button.disabled = true;
+  setEditorStatus(typed ? 'Adding…' : 'Fetching the video title…');
+
+  let title = typed;
+  if (!title) {
+    title = (await fetchVideoTitle(url)) || parseYouTubeUrl(url) || url;
+  }
+
+  button.disabled = false;
+  const current = findList(list.id);
+  if (!current || current.id !== state.editingId) return;
+
+  const next = addItem(current, { title, url });
+  if (!next) {
+    setEditorStatus('Could not add that video.', true);
+    return;
+  }
+  applyListEdit(current, next);
+  el('add-item-url').value = '';
+  el('add-item-title').value = '';
+  renderEditor();
+  setEditorStatus(`Added “${title}”.`);
+  el('add-item-url').focus();
+}
+
+let shareCloseTimer = null;
+let shareReturnFocus = null;
+let shareRequestToken = 0;
+
+function setShareStatus(message, isError) {
+  const node = el('share-status');
+  node.textContent = message;
+  node.classList.toggle('is-error', Boolean(isError));
+}
+
+async function openShare(listId, options = {}) {
+  const list = listId ? findList(listId) : null;
+  const token = ++shareRequestToken;
+  const modal = el('share-modal');
+  shareReturnFocus = document.activeElement;
+  clearTimeout(shareCloseTimer);
+  modal.classList.remove('hidden');
+  void modal.offsetHeight;
+  modal.classList.add('is-open');
+  setShareStatus('');
+  el('share-import-code').value = '';
+  el('share-out').classList.toggle('hidden', !list);
+
+  if (list) {
+    el('share-code').value = 'Encoding…';
+    const count = list.items.length;
+    el('share-note').textContent = `Share “${list.name}” (${count} video${count === 1 ? '' : 's'}).`;
+    try {
+      const code = await encodeList(list);
+      if (token === shareRequestToken) el('share-code').value = code;
+    } catch (err) {
+      if (token === shareRequestToken) {
+        el('share-code').value = '';
+        setShareStatus(err && err.message ? err.message : 'Could not create a code.', true);
+      }
+    }
+  }
+
+  if (options.focusImport) el('share-import-code').focus();
+  else el('share-close').focus();
+}
+
+function closeShare() {
+  const modal = el('share-modal');
+  modal.classList.remove('is-open');
+  clearTimeout(shareCloseTimer);
+  shareCloseTimer = setTimeout(() => modal.classList.add('hidden'), 200);
+  if (shareReturnFocus && typeof shareReturnFocus.focus === 'function') {
+    shareReturnFocus.focus();
+  }
+  shareReturnFocus = null;
+}
+
+async function copyShareCode() {
+  const code = el('share-code').value;
+  if (!code) return;
+  try {
+    await navigator.clipboard.writeText(code);
+    setShareStatus('Code copied.');
+  } catch {
+    el('share-code').select();
+    setShareStatus('Could not copy — press Ctrl+C.', true);
+  }
+}
+
+async function importShareCode() {
+  const code = el('share-import-code').value;
+  if (!code.trim()) {
+    setShareStatus('Paste a code first.', true);
+    return;
+  }
+  const button = el('share-import-btn');
+  button.disabled = true;
+  setShareStatus('Reading the code…');
+  const decoded = await decodeList(code);
+  button.disabled = false;
+  if (!decoded) {
+    setShareStatus('That code is not a valid list.', true);
+    return;
+  }
+  const list = createList({ name: uniqueName(decoded.name, listNames()), items: decoded.items });
+  state.lists.push(list);
+  persist();
+  renderLibrary();
+  el('share-import-code').value = '';
+  const count = list.items.length;
+  setShareStatus(`Imported “${list.name}” with ${count} video${count === 1 ? '' : 's'}.`);
+}
+
 async function init() {
+  const raw = loadRaw();
   const saved = load();
   if (saved && typeof saved.volume === 'number' && saved.volume >= 0 && saved.volume <= 1) {
     masterVolume = saved.volume;
   }
 
-  initPlaylistTool();
+  try {
+    state.starter = starterList(await loadItems());
+  } catch (err) {
+    state.starter = starterList([]);
+    el('status').textContent = `Error: ${err.message}. Serve the site over HTTP.`;
+  }
 
-  if (saved && saved.custom === true && isValidItems(saved.items)) {
-    state.items = saved.items;
-    state.customSource = true;
-    state.sourceName = typeof saved.sourceName === 'string' ? saved.sourceName : 'your file';
-  } else {
-    try {
-      state.items = await loadItems();
-    } catch (err) {
-      el('status').textContent = `Error: ${err.message}. Serve the site over HTTP.`;
-      return;
+  const record = normalizeRecord(saved);
+  if (record) {
+    state.lists = record.lists.filter((list) => list.id !== STARTER_ID);
+    state.videos = record.videos;
+    const known = state.lists.some((list) => list.id === record.activeListId);
+    state.activeListId =
+      record.activeListId === STARTER_ID || known ? record.activeListId : STARTER_ID;
+    state.items = activeList().items;
+    hydrateResolved();
+    state.tournament = createTournament(idsOf(state.items));
+    if (isResumableRecord(record, idsOf(state.items))) {
+      try {
+        getProgress({ ids: record.ids, winners: record.winners });
+        state.tournament = { ids: [...record.ids], winners: [...record.winners] };
+      } catch {
+        state.tournament = createTournament(idsOf(state.items));
+      }
     }
+    if (saved && saved.version === 2 && raw) {
+      saveBackup(raw);
+      persist();
+    }
+  } else {
+    state.items = state.starter.items;
+    hydrateResolved();
+    state.tournament = createTournament(idsOf(state.items));
   }
 
-  if (isMatchingSource(saved, state.items) && saved.version === RECORD_VERSION) {
-    for (const [id, info] of hydrateEntries(saved.resolved)) resolved.set(id, info);
-  }
-  if (saved && saved.version === RECORD_VERSION) {
-    for (const [id, info] of hydrateVideoCache(saved.videos, state.items)) resolved.set(id, info);
-  }
-  state.tournament = createTournament(idsOf(state.items));
-  if (isResumable(saved)) {
-    state.tournament = { ids: [...saved.ids], winners: [...saved.winners] };
-  }
-  updateResumeButton(saved);
+  updateResumeButton();
   updateSourceLabel();
+  renderLibrary();
 
   el('start-btn').addEventListener('click', () => {
-    if (isResumable(load()) && !confirm('Start a new ranking? Your saved progress will be replaced.')) {
+    if (state.items.length === 0) {
+      el('status').textContent = 'Add at least one video to this list first.';
       return;
     }
+    if (
+      runInProgress() &&
+      !isComplete(state.tournament) &&
+      !confirm('Start a new ranking? Your saved progress will be replaced.')
+    ) {
+      return;
+    }
+    discardPoll();
+    cleanupMedia('a');
+    cleanupMedia('b');
     const ids = idsOf(state.items);
     const order = el('shuffle').checked ? shuffleIds(ids) : ids;
     state.tournament = createTournament(order);
@@ -209,25 +690,57 @@ async function init() {
     renderMatch();
   });
 
-  el('reset-btn').addEventListener('click', async () => {
-    if (!confirm('Clear all progress and load the default list?')) return;
-    discardPoll();
-    clear();
-    resolved.clear();
-    resolving.clear();
-    state.customSource = false;
-    state.sourceName = '';
-    try {
-      state.items = await loadItems();
-    } catch (err) {
-      el('status').textContent = `Error: ${err.message}. Serve the site over HTTP.`;
-      return;
-    }
-    state.tournament = createTournament(idsOf(state.items));
-    updateResumeButton(null);
+  el('reset-btn').addEventListener('click', () => {
+    if (!confirm('Clear this ranking and return to the starter list? Your lists are kept.')) return;
+    state.activeListId = STARTER_ID;
+    state.items = state.starter.items;
+    hydrateResolved();
+    resetTournament();
+    persist();
+    updateResumeButton();
     updateSourceLabel();
     showScreen('start');
   });
+
+  el('lists-btn').addEventListener('click', openLibrary);
+  el('lists-back-btn').addEventListener('click', () => showScreen('start'));
+  el('editor-back-btn').addEventListener('click', openLibrary);
+
+  el('new-list-btn').addEventListener('click', () => {
+    const list = createList({ name: uniqueName('New list', listNames()), items: [] });
+    state.lists.push(list);
+    persist();
+    openEditor(list.id);
+    el('list-name').select();
+  });
+
+  el('import-list-btn').addEventListener('click', () => openShare(null, { focusImport: true }));
+  el('duplicate-list-btn').addEventListener('click', () => duplicateList(state.editingId));
+  el('add-item-form').addEventListener('submit', addListItem);
+  el('list-name').addEventListener('change', () => {
+    const current = findList(state.editingId);
+    if (!current || current.id === STARTER_ID) return;
+    const next = renameList(current, el('list-name').value);
+    if (!next) {
+      el('list-name').value = current.name;
+      setEditorStatus('A list needs a name.', true);
+      return;
+    }
+    if (next === current) {
+      el('list-name').value = current.name;
+      return;
+    }
+    applyListEdit(current, next);
+    el('list-name').value = next.name;
+    setEditorStatus('Name saved.');
+  });
+
+  el('share-close').addEventListener('click', closeShare);
+  el('share-modal').addEventListener('click', (e) => {
+    if (e.target === el('share-modal')) closeShare();
+  });
+  el('share-copy-btn').addEventListener('click', copyShareCode);
+  el('share-import-btn').addEventListener('click', importShareCode);
 
   el('file-input').addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
@@ -245,7 +758,7 @@ async function init() {
       el('status').textContent = 'No valid "title,link" rows found in that file.';
       return;
     }
-    useItems(items, file.name);
+    createAndActivate(items, file.name);
   });
 
   el('undo-btn').addEventListener('click', () => {
@@ -280,6 +793,7 @@ async function init() {
     persist();
   });
 
+  initPlaylistTool();
   initTwitch();
   showScreen('start');
 }
@@ -452,6 +966,7 @@ function initTwitch() {
 
 const resolved = new Map();
 const resolving = new Map();
+let resolutionEpoch = 0;
 
 const media = {
   a: { adapter: null, button: null },
@@ -521,17 +1036,28 @@ function ensureResolved(item) {
   if (resolved.has(item.id)) return Promise.resolve();
   const inFlight = resolving.get(item.id);
   if (inFlight) return inFlight;
+  const epoch = resolutionEpoch;
+  const stillCurrent = () =>
+    epoch === resolutionEpoch &&
+    state.items.some((entry) => entry.id === item.id && entry.url === item.url);
   const pending = fetchVideoForItem(item)
     .then((data) => {
+      if (!stillCurrent()) return;
       resolved.set(item.id, data);
+      if (data && (data.videoUrl || data.youtubeId)) {
+        state.videos[item.url] = data.videoUrl
+          ? { videoUrl: data.videoUrl }
+          : { youtubeId: data.youtubeId };
+      }
       persist();
     })
     .catch(() => {
+      if (!stillCurrent()) return;
       resolved.set(item.id, { videoUrl: null, pageUrl: item.url });
       persist();
     })
     .finally(() => {
-      resolving.delete(item.id);
+      if (resolving.get(item.id) === pending) resolving.delete(item.id);
     });
   resolving.set(item.id, pending);
   return pending;
@@ -934,24 +1460,36 @@ el('panel-a').addEventListener('mouseleave', () => setActive(lockedSide));
 el('panel-b').addEventListener('mouseenter', () => setActive('b'));
 el('panel-b').addEventListener('mouseleave', () => setActive(lockedSide));
 
+function trapFocus(modal, e) {
+  const focusables = modal.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled])',
+  );
+  if (!focusables.length) return;
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
 document.addEventListener('keydown', (e) => {
-  const modal = el('preview-modal');
-  if (!modal.classList.contains('hidden')) {
+  const shareModal = el('share-modal');
+  const previewModal = el('preview-modal');
+  const openModal = !shareModal.classList.contains('hidden')
+    ? shareModal
+    : !previewModal.classList.contains('hidden')
+      ? previewModal
+      : null;
+  if (openModal) {
     if (e.key === 'Escape') {
-      closePreview();
+      if (openModal === shareModal) closeShare();
+      else closePreview();
     } else if (e.key === 'Tab') {
-      const focusables = modal.querySelectorAll('a[href], button:not([disabled])');
-      if (focusables.length) {
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
+      trapFocus(openModal, e);
     }
     return;
   }
@@ -1124,9 +1662,9 @@ el('download-btn').addEventListener('click', () => {
 el('again-btn').addEventListener('click', () => {
   if (!confirm('Clear progress and start over?')) return;
   discardPoll();
-  state.tournament = createTournament(state.items.map((i) => i.id));
+  state.tournament = createTournament(idsOf(state.items));
   persist();
-  updateResumeButton(null);
+  updateResumeButton();
   showScreen('start');
 });
 
@@ -1238,7 +1776,7 @@ function initPlaylistTool() {
 
   el('playlist-use-btn').addEventListener('click', () => {
     if (!pendingPlaylistItems) return;
-    useItems(assignIds(pendingPlaylistItems), 'YouTube playlist');
+    createAndActivate(assignIds(pendingPlaylistItems), 'YouTube playlist');
   });
 }
 
