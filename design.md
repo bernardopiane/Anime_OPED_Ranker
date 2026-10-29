@@ -91,6 +91,8 @@ added later; it is not required.
 - Cards, media panels, podium stands: `--radius-lg` (18px) / `--radius-md`.
 - Buttons: pill (`--radius-pill`).
 - Inputs, keycaps, badges, rungs: `--radius-sm` (8px) / pill.
+- Every interactive control keeps a **44×44 CSS-px hit target**, including the
+  compact panel controls and the editor's row actions.
 - Panels carry a **3px team-coloured top rail** and a soft team-tinted top wash.
 
 ## Macrostructures
@@ -99,7 +101,7 @@ added later; it is not required.
   action, a statement footer.
 - **Duel — Split Arena:** a diptych of two duotone panels with a split-ring `VS`
   medallion, a round ladder in the HUD, and a per-side **Pick** call to action.
-- **Results — Awards Stage:** a kicker'd heading over a spotlighted gold stage; the
+- **Results — Awards Stage:** a heading over a spotlighted gold stage; the
   three-step podium stands on it (2nd left / 1st centre / 3rd right), then the
   index-first **Full ranking** board. This is the one screen that leaves the duel's
   warm/cool duotone for a gold "reveal" world — see below.
@@ -132,8 +134,9 @@ screen; no new colours, fonts, or motion are introduced.
 - **Macro — Shelf:** an uppercase `YOUR LIBRARY` kicker over an `h1` **Lists**, one
   line of voice ("Build a YouTube ranking list, reuse it, or share it as one code."),
   then a toolbar with **Back** on the left and **New list** / **Import code** on the
-  right. Below it, a vertical stack of list cards inside the shared `--color-paper-2`
-  panel (`--radius-lg`, `--shadow-card`).
+  right. Below it, a vertical stack of list cards inside a borderless
+  `--color-paper-2` layer (`--radius-lg`) — the list cards are the only bordered
+  surfaces, so the panel never reads as a card inside a card.
 - **List card:** a `--color-paper` surface with a `--color-rule` border and
   `--radius-md`. The head row pairs the list name (`--text-md`, wraps anywhere) with
   a mono uppercase pill badge — filled `--color-accent` + `--color-accent-ink` for
@@ -192,8 +195,8 @@ screen; no new colours, fonts, or motion are introduced.
   its outer edge (`panel-enter-a` / `panel-enter-b`, `backwards` fill so hover-lift
   still works afterwards). The unchanged side is never re-rendered, so its video
   keeps playing — picks feel instant.
-- Hover: panels tint their surface, deepen their border, and lift 3px
-  (transform only, `@media (hover: hover)`).
+- Hover: panels deepen their border and lift a soft shadow (no surface tint, no
+  transform, `@media (hover: hover)`).
 - Instant focus ring: `:focus-visible` outline, no delay.
 - Every animation is disabled under `prefers-reduced-motion: reduce`.
 
@@ -202,8 +205,8 @@ screen; no new colours, fonts, or motion are introduced.
 - Buttons dip 1px on `:active`; the primary CTA is a filled pill that deepens on hover.
 - The per-side **Pick** button is a full-width, team-filled action pinned to the
   panel's foot — the explicit "this one" affordance.
-- Panels lift and warm on hover; both the panel and its Pick button use the team
-  colour.
+- Panels deepen their border and shadow on hover; both the panel and its Pick
+  button use the team colour.
 - Results rows tint on hover; the champion's figure, stand rail, rank chip, and row
   all carry the gold `--color-champion` treatment.
 - Theme chip swaps sun/moon icon per active theme.

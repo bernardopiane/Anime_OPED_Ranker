@@ -307,10 +307,24 @@ function openEditor(id) {
   el('list-name').focus();
 }
 
-function setEditorStatus(message, isError) {
+function clearEditorFieldErrors() {
+  const view = el('editor-view');
+  if (!view) return;
+  for (const field of view.querySelectorAll('[aria-invalid="true"]')) {
+    field.removeAttribute('aria-invalid');
+    field.removeAttribute('aria-describedby');
+  }
+}
+
+function setEditorStatus(message, isError, field) {
   const node = el('editor-status');
   node.textContent = message;
   node.classList.toggle('is-error', Boolean(isError));
+  clearEditorFieldErrors();
+  if (isError && field) {
+    field.setAttribute('aria-invalid', 'true');
+    field.setAttribute('aria-describedby', 'editor-status');
+  }
 }
 
 function renderEditor() {
@@ -361,10 +375,16 @@ function editorRow(list, item, index, readOnly) {
   titleInput.addEventListener('change', () => {
     const current = findList(list.id);
     if (!current) return;
-    const next = updateItemTitle(current, item.id, titleInput.value);
+    const typed = sanitizeTitle(titleInput.value);
+    if (!typed) {
+      titleInput.value = item.title;
+      setEditorStatus('A title cannot be empty.', true, titleInput);
+      return;
+    }
+    const next = updateItemTitle(current, item.id, typed);
     if (!next) {
       titleInput.value = item.title;
-      setEditorStatus('A title cannot be empty.', true);
+      setEditorStatus('A title cannot be empty.', true, titleInput);
       return;
     }
     if (next === current) {
@@ -393,7 +413,7 @@ function editorRow(list, item, index, readOnly) {
     const normalized = normalizeYouTubeUrl(urlInput.value);
     if (!normalized) {
       urlInput.value = item.url;
-      setEditorStatus('Enter a valid YouTube link.', true);
+      setEditorStatus('Enter a valid YouTube link.', true, urlInput);
       return;
     }
     const duplicate = current.items.some(
@@ -401,7 +421,7 @@ function editorRow(list, item, index, readOnly) {
     );
     if (duplicate) {
       urlInput.value = item.url;
-      setEditorStatus('That video is already in this list.', true);
+      setEditorStatus('That video is already in this list.', true, urlInput);
       return;
     }
     const next = updateItemUrl(current, item.id, normalized);
@@ -488,11 +508,11 @@ async function addListItem(event) {
 
   const url = normalizeYouTubeUrl(el('add-item-url').value);
   if (!url) {
-    setEditorStatus('Enter a valid YouTube link.', true);
+    setEditorStatus('Enter a valid YouTube link.', true, el('add-item-url'));
     return;
   }
   if (list.items.some((item) => item.url === url)) {
-    setEditorStatus('That video is already in this list.', true);
+    setEditorStatus('That video is already in this list.', true, el('add-item-url'));
     return;
   }
   if (list.items.length >= MAX_ITEMS) {
@@ -516,7 +536,7 @@ async function addListItem(event) {
 
   const next = addItem(current, { title, url });
   if (!next) {
-    setEditorStatus('Could not add that video.', true);
+    setEditorStatus('Could not add that video.', true, el('add-item-url'));
     return;
   }
   applyListEdit(current, next);
@@ -537,6 +557,12 @@ function setShareStatus(message, isError) {
   node.classList.toggle('is-error', Boolean(isError));
 }
 
+function setPageInert(inert) {
+  el('app').inert = inert;
+  const toggle = el('theme-toggle');
+  if (toggle) toggle.inert = inert;
+}
+
 async function openShare(listId, options = {}) {
   const list = listId ? findList(listId) : null;
   const token = ++shareRequestToken;
@@ -546,6 +572,7 @@ async function openShare(listId, options = {}) {
   modal.classList.remove('hidden');
   void modal.offsetHeight;
   modal.classList.add('is-open');
+  setPageInert(true);
   setShareStatus('');
   el('share-import-code').value = '';
   el('share-out').classList.toggle('hidden', !list);
@@ -566,7 +593,7 @@ async function openShare(listId, options = {}) {
   }
 
   if (options.focusImport) el('share-import-code').focus();
-  else el('share-close').focus();
+  else el('share-title').focus();
 }
 
 function closeShare() {
@@ -574,6 +601,7 @@ function closeShare() {
   modal.classList.remove('is-open');
   clearTimeout(shareCloseTimer);
   shareCloseTimer = setTimeout(() => modal.classList.add('hidden'), 200);
+  setPageInert(false);
   if (shareReturnFocus && typeof shareReturnFocus.focus === 'function') {
     shareReturnFocus.focus();
   }
@@ -723,7 +751,7 @@ async function init() {
     const next = renameList(current, el('list-name').value);
     if (!next) {
       el('list-name').value = current.name;
-      setEditorStatus('A list needs a name.', true);
+      setEditorStatus('A list needs a name.', true, el('list-name'));
       return;
     }
     if (next === current) {
@@ -847,6 +875,7 @@ function renderVotesNow() {
     if (percentNode) percentNode.textContent = `${percent}%`;
     if (fill) fill.style.width = `${percent}%`;
     const unit = sideCount === 1 ? 'vote' : 'votes';
+    meter.setAttribute('aria-valuenow', String(percent));
     meter.setAttribute('aria-label', `${side === 'a' ? 'A' : 'B'}: ${sideCount} ${unit}, ${percent}%`);
   }
 }
@@ -1221,6 +1250,10 @@ function renderPanel(side, item, animate = false) {
 
   const meter = document.createElement('div');
   meter.className = 'vote-meter hidden';
+  meter.setAttribute('role', 'meter');
+  meter.setAttribute('aria-valuemin', '0');
+  meter.setAttribute('aria-valuemax', '100');
+  meter.setAttribute('aria-valuenow', '0');
   meter.setAttribute('aria-label', `${side === 'a' ? 'A' : 'B'}: 0 votes, 0%`);
 
   const voteCount = document.createElement('span');
@@ -1541,7 +1574,8 @@ function openPreview() {
   modal.classList.remove('hidden');
   void modal.offsetHeight;
   modal.classList.add('is-open');
-  el('preview-close').focus();
+  setPageInert(true);
+  el('preview-title').focus();
 }
 
 function closePreview() {
@@ -1549,6 +1583,7 @@ function closePreview() {
   modal.classList.remove('is-open');
   clearTimeout(previewCloseTimer);
   previewCloseTimer = setTimeout(() => modal.classList.add('hidden'), 200);
+  setPageInert(false);
   if (previewReturnFocus && typeof previewReturnFocus.focus === 'function') {
     previewReturnFocus.focus();
   }
@@ -1588,7 +1623,7 @@ function renderPodium(items) {
       img.className = 'podium-thumb';
       img.src = thumbnail;
       img.alt = '';
-      img.loading = 'lazy';
+      if (rank === 1) img.fetchPriority = 'high';
       img.addEventListener('error', () => figure.replaceWith(podiumShowTile(item.title)));
       figure.appendChild(img);
       li.appendChild(figure);

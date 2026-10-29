@@ -40,7 +40,7 @@ test('fixed 16:9 aspect ratios are removed from media regions', () => {
 test('phone stacking rule is preserved', () => {
   assert.match(
     css,
-    /@media\s*\(max-width:\s*720px\)\s*\{[^}]*#panels\s*\{[^}]*flex-direction:\s*column/,
+    /@media\s*\(max-width:\s*45em\)\s*\{[^}]*#panels\s*\{[^}]*flex-direction:\s*column/,
   );
 });
 
@@ -50,11 +50,11 @@ test('library screen is centred and capped', () => {
   assert.match(block, /margin-inline:\s*auto/);
 });
 
-test('library and editor panels reuse the card surface', () => {
+test('library and editor panels reuse the tonal surface without a second card', () => {
   const block = rule('.lists-panel');
   assert.match(block, /background:\s*var\(--color-paper-2\)/);
-  assert.match(block, /border:\s*1px solid var\(--color-rule\)/);
   assert.match(block, /border-radius:\s*var\(--radius-lg\)/);
+  assert.ok(!/border:/.test(block), 'the panel is a layer, not a card');
 });
 
 test('the active list card is outlined with the accent colour', () => {
@@ -93,7 +93,7 @@ test('destructive list actions use the danger colour', () => {
 });
 
 test('library and editor stack cleanly on narrow phones', () => {
-  const block = css.match(/@media\s*\(max-width:\s*560px\)\s*\{([^@]*?)\n\}/s)?.[1] ?? '';
+  const block = css.match(/@media\s*\(max-width:\s*35em\)\s*\{([^@]*?)\n\}/s)?.[1] ?? '';
   assert.match(block, /\.lists-panel\s*\{[^}]*padding:\s*var\(--space-md\)/);
   assert.match(block, /\.editor-item\s*\{[^}]*grid-template-columns:\s*2rem minmax\(0,\s*1fr\)/);
   assert.match(block, /\.editor-item-actions\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/);
