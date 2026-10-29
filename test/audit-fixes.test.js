@@ -168,3 +168,9 @@ test('all podium thumbnails load with high priority above the fold', () => {
   assert.match(js, /img\.fetchPriority\s*=\s*'high'/);
   assert.ok(!/if\s*\(rank\s*===\s*1\)\s*img\.fetchPriority/.test(js), 'all podium places get high priority');
 });
+
+test('match screen rests on clean paper ground without muddy radial blobs', () => {
+  const block = rule('#match-screen');
+  assert.ok(!/radial-gradient/.test(block), 'match screen should not leak colored radial blobs into margins');
+  assert.match(rule('.panel'), /box-shadow:\s*var\(--shadow-card\)/, 'panels are elevated cards on the arena ground');
+});

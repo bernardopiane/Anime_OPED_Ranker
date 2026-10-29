@@ -367,10 +367,6 @@ button:disabled {
   gap: var(--space-md);
   min-height: calc(100vh - var(--page-pad) - var(--page-pad));
   min-height: calc(100dvh - var(--page-pad) - var(--page-pad));
-  background-image:
-    radial-gradient(72% 130% at 0% 40%, color-mix(in oklab, var(--color-team-a) 11%, transparent), transparent 72%),
-    radial-gradient(72% 130% at 100% 40%, color-mix(in oklab, var(--color-team-b) 11%, transparent), transparent 72%);
-  background-repeat: no-repeat;
 }
 
 .hud {
@@ -466,6 +462,7 @@ button:disabled {
   border: 1px solid var(--color-rule);
   border-block-start: 3px solid var(--team);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
   transition: background-color var(--dur-micro) var(--ease-out),
     border-color var(--dur-micro) var(--ease-out),
     box-shadow var(--dur-short) var(--ease-out);
