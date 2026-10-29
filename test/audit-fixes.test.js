@@ -136,3 +136,35 @@ test('design.md records the applied system changes', () => {
   assert.ok(!/panel \(`--radius-lg`, `--shadow-card`\)/.test(design), 'the library panel is now borderless');
   assert.match(design, /44\s*[×x*]\s*44|44\s?px/, 'the touch-target floor is documented');
 });
+
+test('duel screen establishes an h1 heading and h2 candidate headings', () => {
+  assert.match(html, /<h1 class="hud-kicker">Duel<\/h1>/);
+  assert.match(js, /const title = document\.createElement\('h2'\)/);
+});
+
+test('library and editor actions carry contextual aria-labels', () => {
+  assert.match(js, /`Edit list \$\{entry\.name\}`/);
+  assert.match(js, /`Share list \$\{entry\.name\}`/);
+  assert.match(js, /`Move \$\{item\.title\} up`/);
+  assert.match(js, /`Remove \$\{item\.title\} from list`/);
+});
+
+test('modals pair aria-describedby with their explanatory note', () => {
+  assert.match(html, /id="share-modal"[^>]*aria-describedby="share-note"/);
+  assert.match(html, /id="preview-modal"[^>]*aria-describedby="preview-note"/);
+  assert.match(html, /id="preview-note"/);
+});
+
+test('theme toggle uses constant accessible name for toggle button', () => {
+  assert.match(html, /id="theme-toggle"[^>]*aria-label="Dark theme"/);
+  assert.match(js, /toggle\.setAttribute\('aria-label',\s*'Dark theme'\)/);
+});
+
+test('mobile landscape adapts duel spacing to short viewports', () => {
+  assert.match(css, /@media\s*\(max-height:\s*32em\)/);
+});
+
+test('all podium thumbnails load with high priority above the fold', () => {
+  assert.match(js, /img\.fetchPriority\s*=\s*'high'/);
+  assert.ok(!/if\s*\(rank\s*===\s*1\)\s*img\.fetchPriority/.test(js), 'all podium places get high priority');
+});

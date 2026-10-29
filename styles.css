@@ -389,6 +389,7 @@ button:disabled {
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  line-height: 1.2;
 }
 .chat-status {
   display: flex;
@@ -488,6 +489,8 @@ button:disabled {
   flex: 0 0 auto;
 }
 .panel .title {
+  margin: 0;
+  font-size: var(--text-base);
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.01em;
@@ -1337,6 +1340,19 @@ button.danger {
 @media (max-width: 30rem) {
   #podium { grid-template-columns: 1fr; }
   .podium-slot { grid-area: auto; }
+}
+
+@media (max-height: 32em) {
+  #match-screen {
+    gap: var(--space-xs);
+    min-height: auto;
+  }
+  .hud { gap: var(--space-xs); }
+  .ladder { display: none; }
+  .panel { padding: var(--space-xs); gap: var(--space-xs); }
+  .panel-head { gap: var(--space-xs); }
+  .match-footer { gap: var(--space-xs); }
+  .hint { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

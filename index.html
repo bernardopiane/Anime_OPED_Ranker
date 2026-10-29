@@ -28,7 +28,7 @@
       id="theme-toggle"
       class="theme-toggle"
       type="button"
-      aria-label="Switch to light theme"
+      aria-label="Dark theme"
       aria-pressed="true"
     >
       <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
@@ -112,7 +112,7 @@
       <section id="match-screen" class="screen hidden">
         <header class="hud">
           <div class="hud-main">
-            <p class="hud-kicker">Duel</p>
+            <h1 class="hud-kicker">Duel</h1>
             <p id="progress-label" class="hud-round"></p>
             <div id="round-ladder" class="ladder" aria-hidden="true"></div>
           </div>
@@ -230,7 +230,7 @@
         </div>
       </section>
     </main>
-    <div id="share-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="share-title">
+    <div id="share-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="share-title" aria-describedby="share-note">
       <div class="modal-card">
         <div class="modal-head">
           <h2 id="share-title" tabindex="-1">Share or import a list</h2>
@@ -260,13 +260,13 @@
       </div>
     </div>
 
-    <div id="preview-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+    <div id="preview-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="preview-title" aria-describedby="preview-note">
       <div class="modal-card">
         <div class="modal-head">
           <h2 id="preview-title" tabindex="-1">Current ranking</h2>
           <button id="preview-close" type="button">Close</button>
         </div>
-        <p class="modal-note">Provisional — updates as you keep picking.</p>
+        <p id="preview-note" class="modal-note">Provisional — updates as you keep picking.</p>
         <ol id="preview-list"></ol>
       </div>
     </div>

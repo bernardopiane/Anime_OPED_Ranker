@@ -65,7 +65,7 @@ function initTheme() {
   const sync = () => {
     const isDark = root.dataset.theme !== 'light';
     toggle.setAttribute('aria-pressed', String(isDark));
-    toggle.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+    toggle.setAttribute('aria-label', 'Dark theme');
   };
   sync();
   toggle.addEventListener('click', () => {
@@ -224,11 +224,12 @@ function applyListEdit(before, after) {
   return true;
 }
 
-function uiButton(label, onClick, className) {
+function uiButton(label, onClick, className, ariaLabel) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.textContent = label;
   if (className) btn.className = className;
+  if (ariaLabel) btn.setAttribute('aria-label', ariaLabel);
   btn.addEventListener('click', onClick);
   return btn;
 }
@@ -275,15 +276,15 @@ function libraryCard(entry) {
   const actions = document.createElement('div');
   actions.className = 'actions';
   if (!isActive) {
-    actions.appendChild(uiButton('Use', () => activateList(entry.id), 'primary'));
+    actions.appendChild(uiButton('Use', () => activateList(entry.id), 'primary', `Use list ${entry.name}`));
   }
-  actions.appendChild(uiButton('Edit', () => openEditor(entry.id)));
-  actions.appendChild(uiButton('Share', () => openShare(entry.id)));
+  actions.appendChild(uiButton('Edit', () => openEditor(entry.id), '', `Edit list ${entry.name}`));
+  actions.appendChild(uiButton('Share', () => openShare(entry.id), '', `Share list ${entry.name}`));
   if (entry.id === STARTER_ID) {
-    actions.appendChild(uiButton('Duplicate to edit', () => duplicateList(entry.id)));
+    actions.appendChild(uiButton('Duplicate to edit', () => duplicateList(entry.id), '', `Duplicate list ${entry.name} to edit`));
   } else {
-    actions.appendChild(uiButton('Duplicate', () => duplicateList(entry.id)));
-    actions.appendChild(uiButton('Delete', () => deleteList(entry.id), 'danger'));
+    actions.appendChild(uiButton('Duplicate', () => duplicateList(entry.id), '', `Duplicate list ${entry.name}`));
+    actions.appendChild(uiButton('Delete', () => deleteList(entry.id), 'danger', `Delete list ${entry.name}`));
   }
   li.appendChild(actions);
   return li;
@@ -445,11 +446,11 @@ function editorRow(list, item, index, readOnly) {
 
   const actions = document.createElement('div');
   actions.className = 'editor-item-actions';
-  const up = uiButton('Up', () => moveListItem(list.id, item.id, -1));
+  const up = uiButton('Up', () => moveListItem(list.id, item.id, -1), '', `Move ${item.title} up`);
   up.disabled = index === 0;
-  const down = uiButton('Down', () => moveListItem(list.id, item.id, 1));
+  const down = uiButton('Down', () => moveListItem(list.id, item.id, 1), '', `Move ${item.title} down`);
   down.disabled = index === list.items.length - 1;
-  const remove = uiButton('Remove', () => removeListItem(list.id, item.id), 'danger');
+  const remove = uiButton('Remove', () => removeListItem(list.id, item.id), 'danger', `Remove ${item.title} from list`);
   actions.append(up, down, remove);
   li.append(fields, actions);
   return li;
@@ -1238,7 +1239,7 @@ function renderPanel(side, item, animate = false) {
 
   const head = document.createElement('div');
   head.className = 'panel-head';
-  const title = document.createElement('div');
+  const title = document.createElement('h2');
   title.className = 'title';
   title.textContent = item.title;
   const cap = document.createElement('span');
@@ -1623,7 +1624,7 @@ function renderPodium(items) {
       img.className = 'podium-thumb';
       img.src = thumbnail;
       img.alt = '';
-      if (rank === 1) img.fetchPriority = 'high';
+      img.fetchPriority = 'high';
       img.addEventListener('error', () => figure.replaceWith(podiumShowTile(item.title)));
       figure.appendChild(img);
       li.appendChild(figure);

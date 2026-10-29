@@ -92,15 +92,17 @@ added later; it is not required.
 - Buttons: pill (`--radius-pill`).
 - Inputs, keycaps, badges, rungs: `--radius-sm` (8px) / pill.
 - Every interactive control keeps a **44×44 CSS-px hit target**, including the
-  compact panel controls and the editor's row actions.
+  compact panel controls and the editor's row actions. Repetitive list actions and
+  editor controls carry contextual `aria-label`s for screen readers.
 - Panels carry a **3px team-coloured top rail** and a soft team-tinted top wash.
 
 ## Macrostructures
 
 - **Start — Fight Card:** an uppercase kicker over the wordmark, one clear call to
   action, a statement footer.
-- **Duel — Split Arena:** a diptych of two duotone panels with a split-ring `VS`
-  medallion, a round ladder in the HUD, and a per-side **Pick** call to action.
+- **Duel — Split Arena:** an `h1` **Duel** heading in the HUD, a round ladder, and a
+  diptych of two duotone panels with `h2` contestant headings, a split-ring `VS`
+  medallion, and a per-side **Pick** call to action.
 - **Results — Awards Stage:** a heading over a spotlighted gold stage; the
   three-step podium stands on it (2nd left / 1st centre / 3rd right), then the
   index-first **Full ranking** board. This is the one screen that leaves the duel's
