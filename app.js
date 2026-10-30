@@ -154,13 +154,21 @@ function updateResumeButton() {
   }
 }
 
+function setStartStatus(message, isError) {
+  const node = el('status');
+  if (!node) return;
+  node.textContent = message;
+  node.classList.toggle('is-error', Boolean(isError));
+}
+
 function updateSourceLabel() {
   const n = state.items.length;
   const noun = n === 1 ? 'opening' : 'openings';
-  el('status').textContent =
+  setStartStatus(
     state.activeListId === STARTER_ID
       ? `${n} ${noun} ready.`
-      : `${n} ${noun} loaded from ${activeList().name}.`;
+      : `${n} ${noun} loaded from ${activeList().name}.`,
+  );
 }
 
 function resetTournament() {
@@ -656,7 +664,7 @@ async function init() {
     state.starter = starterList(await loadItems());
   } catch (err) {
     state.starter = starterList([]);
-    el('status').textContent = `Error: ${err.message}. Serve the site over HTTP.`;
+    setStartStatus(`Error: ${err.message}. Serve the site over HTTP.`, true);
   }
 
   const record = normalizeRecord(saved);
@@ -693,7 +701,7 @@ async function init() {
 
   el('start-btn').addEventListener('click', () => {
     if (state.items.length === 0) {
-      el('status').textContent = 'Add at least one video to this list first.';
+      setStartStatus('Add at least one video to this list first.', true);
       return;
     }
     if (
@@ -779,12 +787,12 @@ async function init() {
     try {
       text = await file.text();
     } catch {
-      el('status').textContent = 'Could not read that file.';
+      setStartStatus('Could not read that file.', true);
       return;
     }
     const items = parseCsv(text);
     if (!isValidItems(items)) {
-      el('status').textContent = 'No valid "title,link" rows found in that file.';
+      setStartStatus('No valid "title,link" rows found in that file.', true);
       return;
     }
     createAndActivate(items, file.name);

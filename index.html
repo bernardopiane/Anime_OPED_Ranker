@@ -45,64 +45,77 @@
       </p>
 
       <section id="start-screen" class="screen">
-        <p class="kicker">OP / ED Tournament</p>
-        <h1 class="wordmark">Anime OP/ED Ranker</h1>
-        <p class="lede">Rank every opening and ending, one duel at a time.</p>
+        <header class="start-hero">
+          <p class="kicker">OP / ED Tournament</p>
+          <h1 class="wordmark">Anime OP/ED Ranker</h1>
+          <p class="lede">Rank every opening and ending, one duel at a time.</p>
+        </header>
+
         <div class="start-card">
-          <p id="status">Loading…</p>
-          <label class="shuffle-toggle">
-            <input id="shuffle" type="checkbox" />
-            <span>Shuffle starting order</span>
-          </label>
-          <label class="load-csv">
-            <span>Load your own CSV</span>
-            <input id="file-input" type="file" accept=".csv,text/csv" />
-          </label>
+          <div class="start-card-head">
+            <p id="status">Loading…</p>
+          </div>
+          <div class="start-options">
+            <label class="shuffle-toggle">
+              <input id="shuffle" type="checkbox" />
+              <span>Shuffle starting order</span>
+            </label>
+            <label class="load-csv">
+              <span>Load your own CSV</span>
+              <input id="file-input" type="file" accept=".csv,text/csv" />
+            </label>
+          </div>
           <div class="actions">
-            <button id="start-btn" class="primary">Start</button>
-            <button id="resume-btn" class="primary hidden">Resume</button>
+            <button id="start-btn" class="primary start-main-btn">Start</button>
+            <button id="resume-btn" class="primary start-main-btn hidden">Resume</button>
             <button id="lists-btn" type="button">Lists</button>
-            <button id="reset-btn">Reset</button>
+            <button id="reset-btn" class="subtle">Reset</button>
           </div>
         </div>
-        <section class="twitch-card" aria-labelledby="twitch-title">
-          <p id="twitch-title" class="twitch-title">Twitch chat voting</p>
-          <div class="twitch-row">
-            <label class="twitch-field">
-              <span class="sr-only">Twitch channel</span>
-              <input id="twitch-channel" type="text" placeholder="your_channel" autocomplete="off" spellcheck="false" />
-            </label>
-            <button id="twitch-connect-btn" type="button">Connect</button>
-          </div>
-          <p id="twitch-status" class="twitch-status" role="status" aria-live="polite">Not connected</p>
-          <p class="twitch-help">
-            Chat votes with <code>!1</code> for the left and <code>!2</code> for the right. You always make the final pick.
-          </p>
-        </section>
-        <details id="playlist-tool" class="playlist-tool">
-          <summary>Turn a YouTube playlist into a CSV</summary>
-          <div class="playlist-body">
-            <label class="playlist-field">
-              <span>Playlist link</span>
-              <input id="playlist-url" type="url" placeholder="https://www.youtube.com/playlist?list=…" />
-            </label>
-            <button id="playlist-open-btn" type="button">Open playlist</button>
-            <p class="playlist-help">
-              Drag this bookmarklet to your bookmarks bar once. Keep this app open, then click the bookmarklet on the YouTube playlist tab.
+
+        <div class="start-aux">
+          <section class="twitch-card" aria-labelledby="twitch-title">
+            <div class="twitch-card-head">
+              <p id="twitch-title" class="twitch-title">Twitch chat voting</p>
+              <p id="twitch-status" class="twitch-status" role="status" aria-live="polite">Not connected</p>
+            </div>
+            <div class="twitch-row">
+              <label class="twitch-field">
+                <span class="sr-only">Twitch channel</span>
+                <input id="twitch-channel" type="text" placeholder="your_channel" autocomplete="off" spellcheck="false" />
+              </label>
+              <button id="twitch-connect-btn" type="button">Connect</button>
+            </div>
+            <p class="twitch-help">
+              Chat votes with <code>!1</code> for the left and <code>!2</code> for the right. You always make the final pick.
             </p>
-            <div class="playlist-bookmarklet-actions">
-              <a id="playlist-bookmarklet" href="#">Import playlist into Ranker</a>
-              <button id="playlist-copy-bookmarklet" type="button">Copy bookmarklet</button>
-            </div>
+          </section>
 
-            <p id="playlist-status" class="playlist-status" role="status" aria-live="polite"></p>
+          <details id="playlist-tool" class="playlist-tool">
+            <summary>Turn a YouTube playlist into a CSV</summary>
+            <div class="playlist-body">
+              <label class="playlist-field">
+                <span>Playlist link</span>
+                <input id="playlist-url" type="url" placeholder="https://www.youtube.com/playlist?list=…" />
+              </label>
+              <button id="playlist-open-btn" type="button">Open playlist</button>
+              <p class="playlist-help">
+                Drag this bookmarklet to your bookmarks bar once. Keep this app open, then click the bookmarklet on the YouTube playlist tab.
+              </p>
+              <div class="playlist-bookmarklet-actions">
+                <a id="playlist-bookmarklet" href="#">Import playlist into Ranker</a>
+                <button id="playlist-copy-bookmarklet" type="button">Copy bookmarklet</button>
+              </div>
 
-            <div class="actions">
-              <button id="playlist-download-btn" type="button" disabled>Download CSV</button>
-              <button id="playlist-use-btn" class="primary" type="button" disabled>Use this list</button>
+              <p id="playlist-status" class="playlist-status" role="status" aria-live="polite"></p>
+
+              <div class="actions">
+                <button id="playlist-download-btn" type="button" disabled>Download CSV</button>
+                <button id="playlist-use-btn" class="primary" type="button" disabled>Use this list</button>
+              </div>
             </div>
-          </div>
-        </details>
+          </details>
+        </div>
         <p class="meta">Local only — your ranking never leaves this browser.</p>
         <footer class="site-footer">
           <p>Built for the eternal rewatch — rank the bangers, settle the debates.</p>

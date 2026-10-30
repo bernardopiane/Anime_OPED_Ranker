@@ -94,12 +94,19 @@ added later; it is not required.
 - Every interactive control keeps a **44×44 CSS-px hit target**, including the
   compact panel controls and the editor's row actions. Repetitive list actions and
   editor controls carry contextual `aria-label`s for screen readers.
-- Panels carry a **3px team-coloured top rail** and a soft team-tinted top wash.
+- Panels carry a **3px team-coloured top rail** and a soft team-tinted top wash. The
+  Start card is the one exception: accent rail, no wash — it is a control card, not a
+  contestant.
 
 ## Macrostructures
 
-- **Start — Fight Card:** an uppercase kicker over the wordmark, one clear call to
-  action, a statement footer.
+- **Start — Fight Card:** a hero block (uppercase kicker over the wordmark, one line
+  of voice) above a single primary card, then the streamer tools, a statement footer.
+  The card carries the accent top rail, a **status pill** (dot + text: ready / error),
+  a ruled options row (shuffle + CSV picker), and one 48px **Start** / **Resume**
+  primary — **Reset** is de-emphasised and pushed to the end of that row. Twitch chat
+  and the playlist tool stack in an aux group beneath it, each with its own status
+  line; the Twitch card's is a pill, the playlist tool's is a quiet one-liner.
 - **Duel — Split Arena:** an `h1` **Duel** heading in the HUD, a round ladder, and a
   diptych of two duotone panels with `h2` contestant headings, a split-ring `VS`
   medallion, and a per-side **Pick** call to action. The arena rests on the clean
@@ -220,9 +227,11 @@ screen; no new colours, fonts, or motion are introduced.
 An optional audience layer that never changes the duel's hierarchy: the Pick button
 stays the loudest thing on screen.
 
-- **Start card:** a compact **Twitch chat voting** card below the start card's
-  controls, on `--color-paper-2` with `--color-rule`, `--radius-lg`, and the shared
-  card shadow. A pill input (`your_channel`) sits beside the **Connect** button, which
+- **Start — aux stack:** a compact **Twitch chat voting** card in the `.start-aux`
+  group beneath the start card, on `--color-paper-2` with `--color-rule`,
+  `--radius-lg`, and the shared card shadow. The playlist tool follows it in the same
+  stack; both are streamer extras, so neither competes with the 48px Start primary.
+  A pill input (`your_channel`) sits beside the **Connect** button, which
   becomes **Disconnect** while active. The status line is a polite live region with
   five states: **Not connected**, **Connecting…**, **Connected to #name**,
   **Reconnecting in Ns…** (with "still trying" after repeated failures), and a
@@ -274,7 +283,9 @@ stays the loudest thing on screen.
 - **Primary** (Start / Resume): filled accent pill, `--color-accent-ink` text. On the
   Results screen, **Play again** is the filled gold `--color-champion` primary.
 - **Pick A / Pick B:** filled team pill, full width, at the panel foot.
-- **Secondary** (Reset, Copy, Download, Undo, Preview, Pause, Clear votes): outlined chip.
+- **Secondary** (Copy, Download, Undo, Preview, Pause, Clear votes): outlined chip.
+- **De-emphasised** (Reset): `button.subtle` — muted text, `--color-rule` border,
+  pushed to the end of the Start row so it never reads as a peer of the primary.
 - **Library:** **Use** is the filled accent primary for an inactive list; **Edit**,
   **Share**, and **Duplicate** stay outlined, and **Delete** is outlined danger.
 
